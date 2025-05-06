@@ -18,6 +18,7 @@ const csrf = require('csurf');
 const indexRoutes = require('./routes/index');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const transactionRoutes = require('./routes/transaction');
 
 // Import custom middleware
 const { setLocals } = require('./middlewares/locals');
@@ -56,6 +57,8 @@ if (process.env.MONGODB_URI) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/transactions', transactionRoutes);
+
 
 // Set up EJS view engine
 app.set('view engine', 'ejs');
