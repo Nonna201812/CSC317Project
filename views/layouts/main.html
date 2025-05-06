@@ -1,43 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}} | Authentication Template</title>
-  <link rel="stylesheet" href="/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Planner</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <nav class="navbar">
-      <div class="logo">
-        <a href="/">Auth Template</a>
-      </div>
-      <ul class="nav-links">
-        <li><a href="/" class="{{#if (isActiveRoute path '/')}}active{{/if}}">Home</a></li>
-        <li><a href="/about" class="{{#if (isActiveRoute path '/about')}}active{{/if}}">About</a></li>
-        
-        {{#if isAuthenticated}}
-          <li><a href="/user/profile" class="{{#if (isActiveRoute path '/user/profile')}}active{{/if}}">Profile</a></li>
-          <li><a href="/user/settings" class="{{#if (isActiveRoute path '/user/settings')}}active{{/if}}">Settings</a></li>
-          <li><a href="/auth/logout">Logout</a></li>
-        {{else}}
-          <li><a href="/auth/login" class="{{#if (isActiveRoute path '/auth/login')}}active{{/if}}">Login</a></li>
-          <li><a href="/auth/register" class="{{#if (isActiveRoute path '/auth/register')}}active{{/if}}">Register</a></li>
-        {{/if}}
-      </ul>
-    </nav>
-  </header>
+<header>
+    <h1>Budget Planner</h1>
+    <p>Track your income and expenses to manage your finances.</p>
+</header>
 
-  <main>
-    {{> flash-message flashMessage=flashMessage}}
-    
-    {{{body}}}
-  </main>
+<main class="container">
+    <!-- Transaction Form -->
+    <section aria-labelledby="add-transaction">
+        <h2 id="add-transaction">Add New Transaction</h2>
+        <form id="transaction-form">
+            <div class="form-group">
+                <label for="amount">Amount ($)</label>
+                <input type="number" id="amount" placeholder="e.g. 200" required>
+            </div>
 
-  <footer>
-    <p>&copy; {{currentYear}} Authentication Template. For educational purposes only.</p>
-  </footer>
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" required>
+            </div>
 
-  <script src="/js/main.js"></script>
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input type="text" id="category" placeholder="e.g. Groceries" required>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Type</label>
+                <select id="type" required>
+                    <option value="" disabled selected>Select type</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+
+            <button type="submit">Add Transaction</button>
+        </form>
+    </section>
+
+    <!-- Filter Section -->
+    <section aria-labelledby="filter-transactions" class="filter">
+        <h2 id="filter-transactions">Filter Transactions</h2>
+        <label for="filter-type">Type:</label>
+        <select id="filter-type">
+            <option value="all">All</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+        </select>
+
+        <label for="filter-category">Category:</label>
+        <input type="text" id="filter-category" placeholder="Search by category...">
+    </section>
+
+    <!-- Summary Section -->
+    <section class="summary" aria-labelledby="summary-title">
+        <h2 id="summary-title">Financial Summary</h2>
+        <p><strong>Total Income:</strong> $<span id="income-total">0</span></p>
+        <p><strong>Total Expense:</strong> $<span id="expense-total">0</span></p>
+        <p><strong>Balance:</strong> $<span id="balance">0</span></p>
+    </section>
+
+    <!-- Transaction List -->
+    <section aria-labelledby="transaction-history">
+        <h2 id="transaction-history">Transaction History</h2>
+        <div class="list" id="transaction-list">
+            <!-- Transactions will be dynamically inserted here -->
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2025 Budget Planner App. All rights reserved.</p>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
