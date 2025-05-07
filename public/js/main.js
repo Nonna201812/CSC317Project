@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       balance.textContent = (income - expense).toFixed(2);
   }
 });
-=======
+
     const form = document.getElementById('transaction-form');
     const list = document.getElementById('transaction-list');
     const incomeTotal = document.getElementById('income-total');
@@ -175,6 +175,5 @@ document.addEventListener('DOMContentLoaded', () => {
         incomeTotal.textContent = income.toFixed(2);
         expenseTotal.textContent = expense.toFixed(2);
         balance.textContent = (income - expense).toFixed(2);
-    }
-});
->>>>>>> ac254e8db0d278bbe477dbcc122a62f2025ab814
+};
+

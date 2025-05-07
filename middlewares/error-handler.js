@@ -56,4 +56,15 @@ exports.handleErrors = (err, req, res, next) => {
       helpers: helpers
     });
   }
+  module.exports = (err, req, res, next) => {
+    console.error(err);
+    const status = err.statusCode || 500;
+    const message = err.message || 'Server Error';
+
+    if (req.originalUrl.startsWith('/api')) {
+      res.status(status).json({ success: false, message });
+    } else {
+      res.status(status).render('error', { message, error: err });
+    }
+  };
 };

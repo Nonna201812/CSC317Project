@@ -1,12 +1,17 @@
 const Transaction = require('../models/Transaction');
 
 // CREATE a new transaction
-exports.createTransaction = async (req, res) => {
+exports.createTransaction = async (req, res, next) => {
     try {
+        const data = {
+            ...req.body,
+            user: req.session.user.id
+        };
         const transaction = new Transaction(req.body);
         const saved = await transaction.save();
         res.status(201).json(saved);
     } catch (err) {
+        next(err);
         res.status(400).json({ error: err.message });
     }
 };
