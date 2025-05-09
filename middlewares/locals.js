@@ -1,4 +1,4 @@
-/**
+/****
  * Locals middleware
  * Sets variables that will be available in all views
  */
