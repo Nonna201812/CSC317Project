@@ -30,6 +30,15 @@ const UserSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  }, 
+  // Budget fields:
+  budgetLimit: {
+    type: Number,
+    default: 0
+  },
+  budgetAlertSent: {
+    type: Boolean,
+    default: false
   }
 }, {
   // Add virtual properties when converting to JSON
