@@ -1,80 +1,33 @@
-<<<<<<< HEAD
-const Transaction = require('../models/Transaction');
-
-// CREATE a new transaction
-exports.createTransaction = async (req, res) => {
-    try {
-        const transaction = new Transaction(req.body);
-        const saved = await transaction.save();
-        res.status(201).json(saved);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-};
-
-// GET all transactions
-exports.getTransactions = async (req, res) => {
-    try {
-        const transactions = await Transaction.find().sort({ date: -1 });
-        res.json(transactions);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// DELETE a transaction by ID
-exports.deleteTransaction = async (req, res) => {
-    try {
-        const deleted = await Transaction.findByIdAndDelete(req.params.id);
-        if (!deleted) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-        res.json({ message: 'Transaction deleted successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// UPDATE a transaction by ID
-exports.updateTransaction = async (req, res) => {
-    try {
-        const updated = await Transaction.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
-
-        if (!updated) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-
-        res.json(updated);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-};
-=======
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
     description: {
         type: String,
         required: [true, 'Description is required'],
-        trim: true
+        trim: true,
+        minlength: [3, 'Description must be at least 3 characters'],
+        maxlength: [255, 'Description cannot exceed 255 characters']
     },
     amount: {
         type: Number,
         required: [true, 'Amount is required'],
+        min: [0.01, 'Amount must be a positive number'],
+        validate: {
+            validator: (value) => !isNaN(value) && isFinite(value),
+            message: 'Amount must be a valid number'
+        }
     },
     date: {
         type: Date,
         required: [true, 'Date is required'],
-        default: Date.now
+        default: () => new Date()
     },
     category: {
         type: String,
         required: [true, 'Category is required'],
-        trim: true
+        trim: true,
+        minlength: [2, 'Category must be at least 2 characters'],
+        maxlength: [50, 'Category cannot exceed 50 characters']
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -85,5 +38,13 @@ const transactionSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Add indexes for better performance
+transactionSchema.index({ user: 1, date: -1 });
+transactionSchema.index({ user: 1, category: 1 });
+
+// Custom method for formatted amount
+transactionSchema.methods.formatAmount = function () {
+    return `$${this.amount.toFixed(2)}`;
+};
+
 module.exports = mongoose.model('Transaction', transactionSchema);
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2

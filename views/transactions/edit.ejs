@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Transaction</title>
+    <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/transactions">Transactions</a>
+    </nav>
+</header>
+
+<main>
+    <h1>Edit Transaction</h1>
+    <form action="/api/transactions/<%= transaction._id %>?_method=PUT" method="POST">
+        <label for="description">Description:</label>
+        <input type="text" name="description" id="description" required value="<%= transaction.description %>">
+
+        <label for="amount">Amount:</label>
+        <input type="number" name="amount" id="amount" required min="0" step="0.01" value="<%= transaction.amount %>">
+
+        <label for="date">Date:</label>
+        <input type="date" name="date" id="date" required value="<%= transaction.date.toISOString().split('T')[0] %>">
+
+        <label for="category">Category:</label>
+        <input type="text" name="category" id="category" required value="<%= transaction.category %>">
+
+        <button type="submit">Update Transaction</button>
+    </form>
+</main>
+
+<footer>
+    <p>&copy; 2025 Budget App</p>
+</footer>
+</body>
+</html>

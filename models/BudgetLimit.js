@@ -1,4 +1,3 @@
-
 //This flike stores the budget limits per user and category.
 const mongoose = require('mongoose');
 

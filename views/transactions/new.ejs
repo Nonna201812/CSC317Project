@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Transaction</title>
+    <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/transactions">Transactions</a>
+    </nav>
+</header>
+
+<main>
+    <h1>Add New Transaction</h1>
+    <form action="/api/transactions" method="POST">
+        <label for="description">Description:</label>
+        <input type="text" name="description" id="description" required>
+
+        <label for="amount">Amount:</label>
+        <input type="number" name="amount" id="amount" required min="0" step="0.01">
+
+        <label for="date">Date:</label>
+        <input type="date" name="date" id="date" required>
+
+        <label for="category">Category:</label>
+        <input type="text" name="category" id="category" required>
+
+        <button type="submit">Add Transaction</button>
+    </form>
+</main>
+
+<footer>
+    <p>&copy; 2025 Budget App</p>
+</footer>
+</body>
+</html>

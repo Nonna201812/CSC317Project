@@ -3,7 +3,7 @@
  * This file sets up our Express server, middleware, and routes
  */
 
-// Load environment variables from .env file
+// Load environment variables
 require('dotenv').config();
 
 // Core dependencies
@@ -17,42 +17,35 @@ const mongoose = require('mongoose');
 const indexRoutes = require('./routes/index');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const transactionRoutes = require('./routes/transaction');
-
+const transactionRoutes = require('./routes/api/transaction');
+const budgetRoutes = require('./routes/api/budgets');
+const alertRoutes = require('./routes/api/alerts');
 // Import custom middleware
 const { setLocals } = require('./middlewares/locals');
 const handleErrors = require('./middlewares/error-handler');
 
 const app = express();
 
-// Connect to MongoDB (with resilience on failure)
-if (process.env.MONGODB_URI) {
-  mongoose.set('autoIndex', false);
-  mongoose.set('autoCreate', false);
-  const mongooseOptions = {
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    family: 4
-  };
+// Connect to MongoDB
+const mongoOptions = {
+  dbName: process.env.DB_NAME || 'budgetapp',
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+};
 
-  mongoose
-      .connect(process.env.MONGODB_URI, mongooseOptions)
-      .then(() => console.log('MongoDB connected successfully'))
-      .catch(err => {
-        console.error('MongoDB connection error:', err);
-        console.log('Continuing without MongoDB. Some features may not work.');
-      });
-} else {
-  console.log('No MONGODB_URI found. Continuing without database connection.');
-}
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
+    .then(() => console.log('✅ MongoDB connected successfully'))
+    .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Body parsing & static files
+
+// Middleware for parsing JSON and form data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// View engine setup
+// Set up EJS view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -72,53 +65,42 @@ app.locals.helpers = {
 };
 
 // Session configuration
-const sessionConfig = {
+app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-  resave: true,
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24,
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
     httpOnly: true,
-    secure: false,
+    secure: false, // Set to true if using HTTPS
     sameSite: 'lax'
-  }
-};
-
-if (process.env.MONGODB_URI) {
-  sessionConfig.store = MongoStore.create({
+  },
+  store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
-    ttl: 14 * 24 * 60 * 60,
+    ttl: 14 * 24 * 60 * 60, // 14 days
     autoRemove: 'native',
     touchAfter: 60,
-    crypto: { secret: false },
     collectionName: 'sessions',
     stringify: false
-  });
-}
-
-app.use(session(sessionConfig));
-
-// CSRF protection disabled (temporarily)
-console.log('CSRF protection is currently disabled');
-app.use((req, res, next) => {
-  res.locals.csrfToken = 'csrf-protection-disabled';
-  next();
-});
+  })
+}));
 
 // Attach custom locals to all views
 app.use(setLocals);
 
-// Mount routes
+// Mount core routes
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 
-// Global error handler (must be last)
-app.use(handleErrors);
+// Mount newly added routes
+app.use('/api', budgetRoutes);
+app.use('/api', alertRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+app.use(handleErrors);

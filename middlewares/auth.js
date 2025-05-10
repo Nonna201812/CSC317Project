@@ -5,32 +5,29 @@
 
 // Middleware to check if user is authenticated
 exports.isAuthenticated = (req, res, next) => {
-  console.log('Session check - session exists:', !!req.session);
-  console.log('Session check - user in session:', !!req.session.user);
-  console.log('Current session:', req.session);
-  
-  if (req.session && req.session.user) {
-    console.log('User is authenticated, proceeding to next middleware');
-    // User is authenticated, proceed to the next middleware
+  // Check if user session exists
+  if (req.session && req.session.user && req.session.user._id) {
+    console.log(`[AUTH] Authenticated user: ${req.session.user._id}`);
     return next();
   }
-  
-  console.log('User is not authenticated, redirecting to login');
-  // User is not authenticated, redirect to login page
+
+  // Store the intended URL for redirection after login
   if (req.session) {
-    req.session.returnTo = req.originalUrl; // Store the URL they were trying to access
+    req.session.returnTo = req.originalUrl;
+    console.log(`[AUTH] Redirecting unauthenticated user to login from ${req.originalUrl}`);
   }
+
   res.redirect('/auth/login');
 };
 
 // Middleware to check if user is NOT authenticated
 // Used for routes like login/register that should be inaccessible to logged-in users
 exports.isNotAuthenticated = (req, res, next) => {
-  if (!req.session.user) {
-    // User is not authenticated, proceed to the next middleware
+  if (!req.session || !req.session.user || !req.session.user._id) {
+    console.log('[AUTH] User is not authenticated, allowing access to public route');
     return next();
   }
-  
-  // User is already authenticated, redirect to profile page
+
+  console.log(`[AUTH] Authenticated user ${req.session.user._id} tried to access public route, redirecting to profile`);
   res.redirect('/user/profile');
 };
