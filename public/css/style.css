@@ -1,10 +1,5 @@
 /* Global Reset and Base Styles */
 * {
-<<<<<<< HEAD
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  transition: all 0.2s ease-in-out;
-=======
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     transition: all 0.2s ease-in-out;
@@ -204,7 +199,6 @@ footer {
     .transaction-meta {
         text-align: left;
     }
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
 }
 
 body {
