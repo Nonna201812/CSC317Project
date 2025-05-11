@@ -13,7 +13,6 @@ router.post(
         body('date').isISO8601().withMessage('Date must be valid'),
     ],
     validate,
-<<<<<<< HEAD
     transactionController.createTransaction
 );
 
@@ -26,9 +25,6 @@ router.post(
     validate,
     transactionController.setLimit
 );
-=======
-    transactionController.createTransaction);
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
 
 // GET all transactions
 router.get('/', transactionController.getTransactions);
@@ -36,41 +32,22 @@ router.get('/', transactionController.getTransactions);
 // DELETE a transaction by ID
 router.delete(
     '/:id',
-<<<<<<< HEAD
     [param('id').isMongoId().withMessage('Invalid transaction ID')],
     validate,
     transactionController.deleteTransaction
 );
-=======
-        [ param('id').isMongoId().withMessage('Invalid transaction ID') ],
-        validate,
-    transactionController.deleteTransaction);
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
-
 // UPDATE a transaction by ID
 router.put(
     '/:id',
     [
-<<<<<<< HEAD
         param('id').isMongoId().withMessage('Invalid transaction ID'),
-=======
-        param('id')
-            .isMongoId().withMessage('Invalid transaction ID'),
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
         body('amount').optional().isFloat({ gt: 0 }),
         body('description').optional().notEmpty(),
         body('date').optional().isISO8601(),
         body('category').optional().trim().notEmpty()
     ],
     validate,
-<<<<<<< HEAD
     transactionController.updateTransaction
 );
 
 module.exports = router;
-
-=======
-    transactionController.updateTransaction);
-
-module.exports = router;
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
