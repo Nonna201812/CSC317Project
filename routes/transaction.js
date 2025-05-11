@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 const { body, param } = require('express-validator');
-=======
-const { body , param } = require('express-validator');
->>>>>>> 788a1e98b8ddacd305a83649150bb015ee39c3e2
 const express = require('express');
 const router = express.Router();
 const transactionController = require('../controllers/transactionController');
