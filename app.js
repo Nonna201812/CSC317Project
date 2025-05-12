@@ -2,7 +2,26 @@
  * Main application entry point
  * This file sets up our Express server, middleware, and routes
  */
-
+async function connectDB(uri) {
+  if (!uri) {
+    console.warn('No MongoDB URI found—skipping DB connect');
+    return;
+  }
+  mongoose.set('autoIndex', false);
+  mongoose.set('autoCreate', false);
+  try {
+    await mongoose.connect(uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4
+    });
+    console.log('🔗 MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connect error:', err);
+  }
+}
+connectDB(process.env.MONGODB_URI);
 // Load environment variables from .env file
 require('dotenv').config();
 
