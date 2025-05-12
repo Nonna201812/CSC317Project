@@ -21,6 +21,7 @@ router.post(
     '/set-limit',
     [
         body('limit').isFloat({ gt: 0 }).withMessage('Limit must be a positive number')
+        body('category').notEmpty().withMessage('Category is required')
     ],
     validate,
     transactionController.setLimit
