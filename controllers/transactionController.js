@@ -59,3 +59,30 @@ exports.updateTransaction = async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 };
+//SET or UPDATE a budget limit for a user and category
+exports.setLimit = async (req, res) => {
+  try {
+    const { category, limit } = req.body;
+
+    const data = {
+      user: req.session.user.id,
+      category,
+      limit
+    };
+
+    let existing = await BudgetLimit.findOne({ user: data.user, category: data.category });
+
+    let saved;
+    if (existing) {
+      existing.limit = limit;
+      saved = await existing.save();
+    } else {
+      const newLimit = new BudgetLimit(data);
+      saved = await newLimit.save();
+    }
+
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
