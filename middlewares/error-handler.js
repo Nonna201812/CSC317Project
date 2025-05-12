@@ -4,7 +4,7 @@
  */
 
 // Error handler middleware
-exports.handleErrors = (err, req, res, next) => {
+module.exports.handleErrors = (err, req, res, next) => {
   console.error(err.stack);
   
   // Default error values
@@ -21,7 +21,11 @@ exports.handleErrors = (err, req, res, next) => {
     formatDate: (date) => {
       if (!date) return '';
       const d = new Date(date);
-      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      return d.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
     }
   };
 
@@ -45,7 +49,7 @@ exports.handleErrors = (err, req, res, next) => {
       message,
       error: process.env.NODE_ENV === 'development' ? err : {}
     });
-  } else {
+  } 
     // For regular requests, render an error page
     res.status(statusCode).render('error', {
       title: 'Error',
@@ -55,16 +59,4 @@ exports.handleErrors = (err, req, res, next) => {
       isAuthenticated: isAuthenticated,
       helpers: helpers
     });
-  }
-  module.exports = (err, req, res, next) => {
-    console.error(err);
-    const status = err.statusCode || 500;
-    const message = err.message || 'Server Error';
-
-    if (req.originalUrl.startsWith('/api')) {
-      res.status(status).json({ success: false, message });
-    } else {
-      res.status(status).render('error', { message, error: err });
-    }
   };
-};
