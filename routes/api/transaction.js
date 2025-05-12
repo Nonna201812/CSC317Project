@@ -1,11 +1,10 @@
 // Required Dependencies
+
 const express = require('express');
-const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
-const BudgetLimit = require('/models/BudgetLimit');
-const Transaction = require('/models/Transaction');
-const User = require('/models/User');
-const sendBudgetAlert = require('/utils/mailer');
+const BudgetLimit = require('../../models/BudgetLimit');
+const Transaction = require('../../models/Transaction');
+const sendBudgetAlert = require('../../utils/mailer');
 
 const router = express.Router();
 
@@ -19,11 +18,21 @@ async function checkBudgetLimit(userId, category, amount) {
     return null;
 }
 
+// Middleware to handle validation errors
+const validateRequest = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+};
+
 // Create a new transaction
 router.post('/api/transactions', [
     body('description').notEmpty().withMessage('Description is required'),
     body('amount').isNumeric().withMessage('Amount must be a number'),
     body('category').notEmpty().withMessage('Category is required'),
+    validateRequest,
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

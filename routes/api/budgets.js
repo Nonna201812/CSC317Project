@@ -2,11 +2,10 @@
 
 // Required Dependencies
 const express = require('express');
-const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
-const BudgetLimit = require('/models/BudgetLimit');
-require('/utils/mailer');
-const { isAuthenticated } = require('/middlewares/auth');
+const BudgetLimit = require('../../models/BudgetLimit');
+const sendBudgetAlert = require('../../utils/mailer');
+const { isAuthenticated } = require('../../middlewares/auth');
 
 const router = express.Router();
 
@@ -25,7 +24,7 @@ router.post('/', isAuthenticated, [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const session = await mongoose.startSession();
+    const session = await BudgetLimit.startSession();
     session.startTransaction();
 
     try {
