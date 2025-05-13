@@ -16,8 +16,8 @@ const transactionSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Date is required'],
         validate: {
-            validate: function(value) {
-                return value <= new Date();
+            validator: function(value) {
+                return value instanceof Date && value <= new Date();
             },
             message: 'Date cannot be in the future'
         },
