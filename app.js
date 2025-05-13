@@ -1,7 +1,25 @@
-/**
- * Main application entry point
- * This file sets up our Express server, middleware, and routes
- */
+require('dotenv').config();
+
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const mongoose = require('mongoose');
+
+// Import routes
+const indexRoutes = require('./routes/index');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const transactionRoutes = require('./routes/transaction');
+
+// Import custom middleware
+const { setLocals } = require('./middlewares/locals');
+const handleErrors = require('./middlewares/error-handler');
+
+// Initialize Express
+const app = express();
+
+// Connect to MongoDB
 async function connectDB(uri) {
   if (!uri) {
     console.warn('No MongoDB URI found—skipping DB connect');
@@ -22,49 +40,6 @@ async function connectDB(uri) {
   }
 }
 connectDB(process.env.MONGODB_URI);
-// Load environment variables from .env file
-require('dotenv').config();
-
-// Core dependencies
-const express = require('express');
-const path = require('path');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
-const mongoose = require('mongoose');
-
-// Import routes
-const indexRoutes = require('./routes/index');
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-const transactionRoutes = require('./routes/transaction');
-
-// Import custom middleware
-const { setLocals } = require('./middlewares/locals');
-const handleErrors = require('./middlewares/error-handler');
-
-const app = express();
-
-// Connect to MongoDB (with resilience on failure)
-if (process.env.MONGODB_URI) {
-  mongoose.set('autoIndex', false);
-  mongoose.set('autoCreate', false);
-  const mongooseOptions = {
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    family: 4
-  };
-
-  mongoose
-      .connect(process.env.MONGODB_URI, mongooseOptions)
-      .then(() => console.log('MongoDB connected successfully'))
-      .catch(err => {
-        console.error('MongoDB connection error:', err);
-        console.log('Continuing without MongoDB. Some features may not work.');
-      });
-} else {
-  console.log('No MONGODB_URI found. Continuing without database connection.');
-}
 
 // Body parsing & static files
 app.use(express.json());
