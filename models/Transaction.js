@@ -29,6 +29,12 @@ const transactionSchema = new mongoose.Schema({
         trim: true,
         maxlength: [100, 'Category cannot exceed 100 characters']
     },
+    type: {
+        type: String,
+        required: [true, 'Type is required'],
+        enum: ['income', 'expense'],
+        trim: true
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

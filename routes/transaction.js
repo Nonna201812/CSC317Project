@@ -1,7 +1,6 @@
 const { body, param } = require('express-validator');
 const express = require('express');
 const router = express.Router();
-
 const {
     createTransaction,
     updateTransaction,
@@ -9,32 +8,23 @@ const {
     deleteTransaction,
     setLimit
 } = require('../controllers/transactionController');
-
 const validate = require('../middlewares/validate');
 
 // POST a new transaction
 router.post(
     '/',
     [
-        body('description')
-            .trim()
-            .notEmpty().withMessage('Description is required')
-            .isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
-        body('amount')
-            .isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),
-        body('date')
-            .isISO8601().withMessage('Date must be a valid ISO8601 format')
-            .custom((value) => {
-                const parsedDate = new Date(value);
-                if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
-                    throw new Error('Date cannot be in the future');
-                }
-                return true;
-            }),
-        body('category')
-            .trim()
-            .notEmpty().withMessage('Category is required')
-            .isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters')
+        body('description').trim().notEmpty().withMessage('Description is required').isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
+        body('amount').isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),
+        body('date').isISO8601().withMessage('Date must be a valid ISO8601 format').custom((value) => {
+            const parsedDate = new Date(value);
+            if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
+                throw new Error('Date cannot be in the future');
+            }
+            return true;
+        }),
+        body('category').trim().notEmpty().withMessage('Category is required').isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters'),
+        body('type').trim().notEmpty().withMessage('Type is required').isIn(['income', 'expense']).withMessage('Type must be either "income" or "expense"')
     ],
     validate,
     createTransaction
@@ -44,30 +34,20 @@ router.post(
 router.post(
     '/set-limit',
     [
-        body('limit')
-            .isFloat({ gt: 0 }).withMessage('Limit must be a positive number'),
-        body('category')
-            .trim()
-            .notEmpty().withMessage('Category is required')
-            .isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters')
+        body('limit').isFloat({ gt: 0 }).withMessage('Limit must be a positive number'),
+        body('category').trim().notEmpty().withMessage('Category is required').isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters')
     ],
     validate,
     setLimit
 );
 
 // GET all transactions
-router.get(
-    '/',
-    getTransactions
-);
+router.get('/', getTransactions);
 
 // DELETE a transaction by ID
 router.delete(
     '/:id',
-    [
-        param('id')
-            .isMongoId().withMessage('Invalid transaction ID')
-    ],
+    [param('id').isMongoId().withMessage('Invalid transaction ID')],
     validate,
     deleteTransaction
 );
@@ -76,31 +56,18 @@ router.delete(
 router.put(
     '/:id',
     [
-        param('id')
-            .isMongoId().withMessage('Invalid transaction ID'),
-        body('amount')
-            .optional()
-            .isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),
-        body('description')
-            .optional()
-            .trim()
-            .notEmpty().withMessage('Description cannot be empty')
-            .isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
-        body('date')
-            .optional()
-            .isISO8601().withMessage('Date must be a valid ISO8601 format')
-            .custom((value) => {
-                const parsedDate = new Date(value);
-                if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
-                    throw new Error('Date cannot be in the future');
-                }
-                return true;
-            }),
-        body('category')
-            .optional()
-            .trim()
-            .notEmpty().withMessage('Category cannot be empty')
-            .isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters')
+        param('id').isMongoId().withMessage('Invalid transaction ID'),
+        body('amount').optional().isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),
+        body('description').optional().trim().notEmpty().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
+        body('date').optional().isISO8601().withMessage('Date must be a valid ISO8601 format').custom((value) => {
+            const parsedDate = new Date(value);
+            if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
+                throw new Error('Date cannot be in the future');
+            }
+            return true;
+        }),
+        body('category').optional().trim().notEmpty().isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters'),
+        body('type').optional().trim().notEmpty().isIn(['income', 'expense']).withMessage('Type must be either "income" or "expense"')
     ],
     validate,
     updateTransaction

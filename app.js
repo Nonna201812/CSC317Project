@@ -44,11 +44,17 @@ connectDB(process.env.MONGODB_URI);
 // Body parsing & static files
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // Correct static path
+
 
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Serve main.html for the main app page
+app.get('/main', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'layouts', 'main.html'));
+});
 
 // Global template helpers
 app.locals.helpers = {
