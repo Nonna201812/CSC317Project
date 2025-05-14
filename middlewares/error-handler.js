@@ -1,7 +1,8 @@
 module.exports = (err, req, res,) => {
   console.error(err.stack);
   const statusCode = err.statusCode || 500;
-  const message    = err.message    || 'Something went wrong';
+  const message = err.message || 'Something went wrong';
+
   // JSON for API/AJAX
   if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
     return res.status(statusCode).json({
@@ -10,6 +11,7 @@ module.exports = (err, req, res,) => {
       error: process.env.NODE_ENV === 'development' ? err : {}
     });
   }
+
   // EJS render for normal pages
   return res.status(statusCode).render('error', {
     title: 'Error',
