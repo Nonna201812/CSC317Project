@@ -91,6 +91,124 @@ const createTransaction = [
     }
 ];
 
+// GET all transactions
+const getTransactions = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const transactions = await Transaction.find({ user: req.session.user.id }).sort('-date');
+            res.json(transactions);
+        } catch (err) {
+            next(new Error('Failed to fetch transactions: ' + err.message));
+        }
+    }
+];
+
+// GET a single transaction by ID
+const getTransactionById = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const tx = await Transaction.findOne({
+                _id: req.params.id,
+                user: req.session.user.id
+            });
+            if (!tx) {
+                return res.status(404).json({ error: 'Transaction not found' });
+            }
+            res.json(tx);
+        } catch (err) {
+            next(new Error('Failed to fetch transaction: ' + err.message));
+        }
+    }
+];
+
+// UPDATE a transaction
+const updateTransaction = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const { description, amount, date, category, type } = req.body;
+            const updates = {};
+
+            if (description) updates.description = description.trim();
+            if (amount) updates.amount = parseFloat(amount);
+            if (date) updates.date = new Date(date);
+            if (category) updates.category = validateCategory(category);
+            if (type) updates.type = type.trim();
+
+            if (Object.keys(updates).length === 0) {
+                return res.status(400).json({ error: 'No valid updates provided' });
+            }
+
+            const updated = await Transaction.findOneAndUpdate(
+                { _id: req.params.id, user: req.session.user.id },
+                updates,
+                { new: true, runValidators: true, context: 'query' }
+            );
+
+            if (!updated) {
+                return res.status(404).json({ error: 'Transaction not found' });
+            }
+
+            res.json(updated);
+        } catch (err) {
+            next(new Error('Failed to update transaction: ' + err.message));
+        }
+    }
+];
+
+// DELETE a transaction
+const deleteTransaction = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const deleted = await Transaction.findOneAndDelete({
+                _id: req.params.id,
+                user: req.session.user.id
+            });
+            if (!deleted) {
+                return res.status(404).json({ error: 'Transaction not found' });
+            }
+            res.json({ message: 'Deleted successfully' });
+        } catch (err) {
+            next(new Error('Failed to delete transaction: ' + err.message));
+        }
+    }
+];
+
+// SET or UPDATE a budget limit
+const setLimit = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const { category, limit } = req.body;
+            const validatedCategory = validateCategory(category);
+            if (!validatedCategory) {
+                return res.status(400).json({ error: 'Invalid category' });
+            }
+            const parsedLimit = parseFloat(limit);
+            if (isNaN(parsedLimit) || parsedLimit <= 0) {
+                return res.status(400).json({ error: 'Limit must be a positive number' });
+            }
+            const saved = await BudgetLimit.findOneAndUpdate(
+                { user: req.session.user.id, category: validatedCategory },
+                { limit: parsedLimit },
+                { new: true, upsert: true, runValidators: true, context: 'query' }
+            );
+            budgetLimitCache.set(`${req.session.user.id}:${validatedCategory}`, parsedLimit);
+            res.status(201).json(saved);
+        } catch (err) {
+            next(new Error('Failed to set budget limit: ' + err.message));
+        }
+    }
+];
+
 module.exports = {
-    createTransaction
+    createTransaction,
+    getTransactions,
+    getTransactionById,
+    updateTransaction,
+    deleteTransaction,
+    setLimit
 };
