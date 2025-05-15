@@ -1,3 +1,24 @@
-<% layout('layout') -%>
-<h1><%= message %></h1>
-<p><a href="/auth/login">Login</a> or <a href="/auth/register">Register</a></p>
+<%- include('./partials/header') %>
+
+<div class="container">
+  <div class="welcome-section">
+    <h1><%= message %></h1>
+    <p>A simple authentication system for web applications</p>
+
+    <% if (isAuthenticated) { %>
+      <div class="action-buttons">
+        <a href="/user/profile" class="btn primary-btn">View Profile</a>
+      </div>
+    <% } else { %>
+      <div class="action-buttons">
+        <a href="/auth/login" class="btn primary-btn">Login</a>
+        <a href="/auth/register" class="btn secondary-btn">Register</a>
+      </div>
+    <% } %>
+  </div>
+
+  <%- include('budget') %>
+
+</div>
+
+<%- include('./partials/footer') %>
