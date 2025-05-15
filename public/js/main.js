@@ -1,27 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // === Transaction Handling ===
     const form = document.getElementById('transaction-form');
     const list = document.getElementById('transaction-list');
     const incomeTotal = document.getElementById('income-total');
     const expenseTotal = document.getElementById('expense-total');
     const balance = document.getElementById('balance');
 
-    // Optional filters (if using)
     const filterType = document.getElementById('filter-type');
     const filterCategory = document.getElementById('filter-category');
 
-    // Fetch initial transactions
     let transactions = [];
+
+    // Fetch initial transactions
     fetch('/transactions')
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             transactions = data;
             updateUI();
         })
         .catch(err => console.error('Failed to fetch transactions:', err));
 
-    form.addEventListener('submit', (e) => {
+    // Add new transaction
+    form.addEventListener('submit', e => {
         e.preventDefault();
-
         const description = document.getElementById('description').value.trim();
         const amount = parseFloat(document.getElementById('amount').value);
         const date = document.getElementById('date').value;
@@ -33,88 +34,104 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const transaction = {
-            description,
-            amount,
-            date,
-            category,
-            type
-        };
-
-        // Send to server
+        const transaction = { description, amount, date, category, type };
         fetch('/transactions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transaction)
         })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                    console.error(data);
-                    return;
-                }
-
+                if (data.error) return alert(data.error);
                 transactions.push(data);
                 form.reset();
                 updateUI();
             })
-            .catch(err => {
-                alert('Failed to add transaction. Please try again.');
-                console.error(err);
-            });
+            .catch(() => alert('Failed to add transaction.'));
     });
 
-    // Filter listeners
+    // Filters
     if (filterType && filterCategory) {
         filterType.addEventListener('change', updateUI);
         filterCategory.addEventListener('input', updateUI);
     }
 
+    // Render UI
     function updateUI() {
         list.innerHTML = '';
-        let income = 0;
-        let expense = 0;
+        let inc = 0, exp = 0;
+        const typeF = filterType?.value || 'all';
+        const catF  = filterCategory?.value.toLowerCase() || '';
 
-        const typeFilter = filterType?.value || 'all';
-        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
+        transactions
+            .filter(t => (typeF === 'all' || t.type === typeF) && t.category.toLowerCase().includes(catF))
+            .forEach(t => {
+                const item = document.createElement('div');
+                item.className = `transaction-item ${t.type}`;
+                item.innerHTML = `
+          <div class="transaction-details">
+            <span class="category">${t.category}</span>
+            <span class="description">${t.description}</span>
+            <span class="date">${new Date(t.date).toLocaleDateString()}</span>
+          </div>
+          <div class="transaction-meta">
+            <span class="amount">${t.type === 'income' ? '+' : '-'}\$${t.amount.toFixed(2)}</span>
+          </div>
+        `;
+                list.appendChild(item);
+                t.type === 'income' ? inc += t.amount : exp += t.amount;
+            });
+        incomeTotal.textContent = inc.toFixed(2);
+        expenseTotal.textContent = exp.toFixed(2);
+        balance.textContent = (inc - exp).toFixed(2);
+    }
 
-        const filtered = transactions.filter(t => {
-            const typeMatch = typeFilter === 'all' || t.type === typeFilter;
-            const categoryMatch = t.category.toLowerCase().includes(categoryFilter);
-            return typeMatch && categoryMatch;
+    // === Budget‑Limit AJAX ===
+    const limitForm = document.getElementById('limit-form');
+    if (limitForm) {
+        const limitCategoryInput  = document.getElementById('limit-category');
+        const limitAmountInput    = document.getElementById('limit-amount');
+        const currentLimitSpan    = document.getElementById('current-limit');
+        const getActiveCategory   = () => limitCategoryInput.value.trim();
+
+        async function loadLimit() {
+            const category = getActiveCategory();
+            if (!category) return;
+            try {
+                const res = await fetch(`/transactions/limit?category=${encodeURIComponent(category)}`);
+                if (!res.ok) return console.warn('Fetch limit failed', res.status);
+                const { limit } = await res.json();
+                limitAmountInput.value    = limit.toFixed(2);
+                currentLimitSpan.textContent = limit.toFixed(2);
+            } catch (err) {
+                console.warn('Could not load budget limit', err);
+            }
+        }
+
+        limitForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const category = getActiveCategory();
+            const value    = parseFloat(limitAmountInput.value);
+            if (!category || isNaN(value) || value <= 0) {
+                return alert('Enter a valid category and positive limit.');
+            }
+            try {
+                const res = await fetch('/transactions/set-limit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category, limit: value })
+                });
+                const data = await res.json();
+                if (!res.ok) return alert(data.error || 'Failed to save limit');
+                currentLimitSpan.textContent = data.limit.toFixed(2);
+                alert('Budget limit saved!');
+            } catch (err) {
+                console.error('Error setting limit', err);
+                alert('Network error');
+            }
         });
 
-        filtered.forEach(t => {
-            const item = document.createElement('div');
-            item.className = `transaction-item ${t.type}`;
-
-            const details = document.createElement('div');
-            details.className = 'transaction-details';
-            details.innerHTML = `
-                <span class="category">${t.category}</span>
-                <span class="description">${t.description}</span>
-                <span class="date">${new Date(t.date).toLocaleDateString()}</span>
-            `;
-
-            const meta = document.createElement('div');
-            meta.className = 'transaction-meta';
-            meta.innerHTML = `
-                <span class="amount">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
-            `;
-
-            item.appendChild(details);
-            item.appendChild(meta);
-            list.appendChild(item);
-
-            if (t.type === 'income') income += t.amount;
-            else expense += t.amount;
-        });
-
-        incomeTotal.textContent = income.toFixed(2);
-        expenseTotal.textContent = expense.toFixed(2);
-        balance.textContent = (income - expense).toFixed(2);
+        limitCategoryInput.addEventListener('change', loadLimit);
+        loadLimit();
     }
 });
