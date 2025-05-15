@@ -18,7 +18,6 @@ const validateCategory = (category) => {
 
 // In-memory cache for budget limits (to reduce DB calls)
 const budgetLimitCache = new Map();
-
 // CREATE a new transaction
 const createTransaction = [
     checkAuth,
@@ -28,10 +27,10 @@ const createTransaction = [
 
             // Validate inputs
             if (!description?.trim() || description.length > 500) {
-                return res.status(400).json({ error: 'Invalid description' });
+                return res.status(400).json({ error: 'Description is required and cannot exceed 500 characters' });
             }
             if (!['income', 'expense'].includes(type)) {
-                return res.status(400).json({ error: 'Invalid type' });
+                return res.status(400).json({ error: 'Invalid type. Must be either "income" or "expense"' });
             }
             const validatedCategory = validateCategory(category);
             if (!validatedCategory) {
@@ -39,7 +38,7 @@ const createTransaction = [
             }
             const parsedDate = new Date(date);
             if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
-                return res.status(400).json({ error: 'Invalid date' });
+                return res.status(400).json({ error: 'Invalid date. Cannot be in the future' });
             }
             const parsedAmount = parseFloat(amount);
             if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -53,16 +52,16 @@ const createTransaction = [
                 date: parsedDate,
                 category: validatedCategory,
                 type: type.trim(),
-                user: req.session.user.id
+                user: req.userId
             });
             const saved = await transaction.save();
 
             // Check for budget limit breach
-            const cacheKey = `${req.session.user.id}:${validatedCategory}`;
+            const cacheKey = `${req.userId}:${validatedCategory}`;
             let budgetLimit = budgetLimitCache.get(cacheKey);
             if (!budgetLimit) {
                 const limitDoc = await BudgetLimit.findOne({
-                    user: req.session.user.id,
+                    user: req.userId,
                     category: validatedCategory
                 });
                 if (limitDoc) {
@@ -70,13 +69,16 @@ const createTransaction = [
                     budgetLimitCache.set(cacheKey, budgetLimit);
                 }
             }
+
+            // Check if the budget limit is breached
             if (budgetLimit) {
                 const totalSpent = await Transaction.aggregate([
                     { $match: { user: transaction.user, category: validatedCategory } },
                     { $group: { _id: null, total: { $sum: '$amount' } } }
                 ]);
-                if (totalSpent[0]?.total >= budgetLimit) {
-                    const user = await User.findById(req.session.user.id).select('email username');
+
+                if (totalSpent.length > 0 && totalSpent[0].total >= budgetLimit) {
+                    const user = await User.findById(req.userId).select('email username');
                     if (user?.email) {
                         await sendBudgetAlert(user.email, user.username);
                         console.log('✅ Budget alert sent to:', user.email);
@@ -86,10 +88,12 @@ const createTransaction = [
 
             res.status(201).json(saved);
         } catch (err) {
+            console.error("Transaction Creation Error:", err);
             next(new Error('Failed to create transaction: ' + err.message));
         }
     }
 ];
+
 
 // GET all transactions
 const getTransactions = [

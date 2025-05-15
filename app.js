@@ -11,6 +11,7 @@ const indexRoutes = require('./routes/index');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const transactionRoutes = require('./routes/transaction');
+const budgetRoutes = require('./routes/budget');
 
 // Import custom middleware
 const { setLocals } = require('./middlewares/locals');
@@ -44,9 +45,7 @@ connectDB(process.env.MONGODB_URI);
 // Body parsing & static files
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public'))); // Correct static path
-
-
+app.use(express.static(path.join(__dirname, 'public')));
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -113,6 +112,7 @@ app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/', budgetRoutes);
 
 // Global error handler (must be last)
 app.use(handleErrors);
