@@ -2,7 +2,6 @@ const Transaction = require('../models/Transaction');
 const BudgetLimit = require('../models/BudgetLimit');
 const User = require('../models/User');
 const sendBudgetAlert = require('../utils/mailer');
-const mongoose = require('mongoose');
 
 
 // Helper function for user session check
@@ -89,7 +88,7 @@ const checkBudgetLimit = async (userId, category, amount) => {
 };
 
 // POST /auth/login
-exports.postLogin = async (req, res, next) => {
+const postLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
