@@ -1,35 +1,37 @@
 const mongoose = require('mongoose');
 
-const TransactionSchema = new mongoose.Schema({
+const transactionSchema = new mongoose.Schema({
   description: {
     type: String,
-    required: true,
+    required: [true, 'Description is required'],
     trim: true,
-    maxlength: 500
+    maxlength: [500, 'Description cannot exceed 500 characters']
   },
   amount: {
     type: Number,
-    required: true,
-    min: 0.01
+    required: [true, 'Amount is required'],
+    min: [0.01, 'Amount must be a positive number']
   },
   date: {
     type: Date,
-    required: true,
-    default: Date.now,
+    required: [true, 'Date is required'],
     validate: {
-      validator: v => v <= new Date(),
+      validator: function(value) {
+        return value instanceof Date && value <= new Date();
+      },
       message: 'Date cannot be in the future'
-    }
+    },
+    default: Date.now
   },
   category: {
     type: String,
-    required: true,
+    required: [true, 'Category is required'],
     trim: true,
-    maxlength: 100
+    maxlength: [100, 'Category cannot exceed 100 characters']
   },
   type: {
     type: String,
-    required: true,
+    required: [true, 'Type is required'],
     enum: ['income', 'expense'],
     trim: true
   },
@@ -39,6 +41,8 @@ const TransactionSchema = new mongoose.Schema({
     required: true,
     index: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('Transaction', TransactionSchema);
+module.exports = mongoose.model('Transaction', transactionSchema);

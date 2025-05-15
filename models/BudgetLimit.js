@@ -9,19 +9,21 @@ const BudgetLimitSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true,
+    required: [true, 'Category is required'],
     trim: true,
-    lowercase: true,
-    maxlength: 100,
+    maxlength: [100, 'Category cannot exceed 100 characters'],
     index: true
   },
   limit: {
     type: Number,
-    required: true,
-    min: 0.01
+    required: [true, 'Limit is required'],
+    min: [0.01, 'Limit must be a positive number']
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
+// Prevent duplicate budget limits per user-category pair
 BudgetLimitSchema.index({ user: 1, category: 1 }, { unique: true });
 
 module.exports = mongoose.model('BudgetLimit', BudgetLimitSchema);
