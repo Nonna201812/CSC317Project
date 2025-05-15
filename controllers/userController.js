@@ -17,13 +17,19 @@ exports.getProfile = (req, res) => {
 /**
  * Display user settings page
  */
-exports.getSettings = (req, res) => {
-  res.render('user/settings', {
-    title: 'Settings',
-    user: req.session.user,
-    errors: []
-  });
+exports.getSettings = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.session.user.id);
+    res.render('user/settings', {
+      title: 'Settings',
+      user,
+      csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
+    });
+  } catch (error) {
+    next(error);
+  }
 };
+
 
 /**
  * Update user settings
