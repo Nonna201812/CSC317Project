@@ -133,7 +133,7 @@ exports.postLogin = async (req, res, next) => {
     
     // Set user session (don't include password in the session)
     req.session.user = {
-      id: user._id,
+      id: user._id.toString(),
       username: user.username,
       email: user.email
     };
