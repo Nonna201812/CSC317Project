@@ -8,6 +8,7 @@ const User = require('../models/User');
 const baseSettingsLocals = (req, overrides = {}) => ({
   title: 'Settings',
   user: req.session.user,
+  csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : '',
   errors: [],
   flashMessage: null,
   ...overrides
@@ -29,12 +30,7 @@ exports.getProfile = (req, res) => {
 exports.getSettings = async (req, res, next) => {
   try {
     const user = await User.findById(req.session.user.id);
-    // Sync session username
-    req.session.user.username = user.username;
-    // Pull flash message from session if set
-    const flashMessage = req.session.flashMessage;
-    delete req.session.flashMessage;
-    res.render('user/settings', baseSettingsLocals(req, { user, flashMessage }));
+    res.render('user/settings', baseSettingsLocals(req, { user }));
   } catch (error) {
     next(error);
   }
@@ -42,36 +38,25 @@ exports.getSettings = async (req, res, next) => {
 
 /**
  * Update user settings
- * Uses POST-Redirect-Get to avoid form resubmission
  */
 exports.updateSettings = async (req, res, next) => {
   try {
     const userId = req.session.user.id;
     const user = await User.findById(userId);
     if (!user) {
-      const err = new Error('User not found');
-      err.statusCode = 404;
-      return next(err);
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
     }
 
-    const { username } = req.body;
-    const newUsername = username?.trim();
+    const newUsername = req.body.username?.trim();
     if (newUsername && newUsername !== user.username) {
-      if (newUsername.length > 20) {
-        return res.status(400).render(
-            'user/settings',
-            baseSettingsLocals(req, {
-              user,
-              errors: [{ msg: 'Username cannot exceed 20 characters' }]
-            })
-        );
-      }
       const existing = await User.findOne({ username: newUsername });
       if (existing && existing._id.toString() !== userId) {
         return res.status(400).render(
             'user/settings',
             baseSettingsLocals(req, {
-              user,
+              user: req.session.user,
               errors: [{ msg: 'Username is already taken' }]
             })
         );
@@ -81,10 +66,16 @@ exports.updateSettings = async (req, res, next) => {
     }
 
     await user.save();
-    // Set flash and redirect to GET for PRG pattern
-    req.session.flashMessage = { type: 'success', text: 'Settings updated successfully' };
-    return res.redirect('/user/settings');
+    res.render(
+        'user/settings',
+        baseSettingsLocals(req, {
+          user: req.session.user,
+          flashMessage: { type: 'success', text: 'Settings updated successfully' }
+        })
+    );
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
+
+
