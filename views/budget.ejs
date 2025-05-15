@@ -8,6 +8,12 @@
     <section aria-labelledby="add-transaction">
         <h2 id="add-transaction">Add New Transaction</h2>
         <form id="transaction-form">
+            <!-- Description field added -->
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" placeholder="e.g. Groceries at Safeway" required>
+            </div>
+
             <div class="form-group">
                 <label for="amount">Amount ($)</label>
                 <input type="number" id="amount" name="amount" placeholder="e.g. 200" required>
@@ -91,6 +97,3 @@
 </main>
 
 <script src="/js/main.js" defer></script>
-
-
-
