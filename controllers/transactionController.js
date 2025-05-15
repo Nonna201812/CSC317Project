@@ -248,3 +248,5 @@ module.exports = {
     deleteTransaction,
     setLimit
 };
+
+module.exports = exports;
