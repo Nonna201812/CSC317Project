@@ -1,4 +1,6 @@
+// app.js
 require('dotenv').config();
+
 const express    = require('express');
 const path       = require('path');
 const session    = require('express-session');
@@ -6,14 +8,14 @@ const MongoStore = require('connect-mongo');
 const mongoose   = require('mongoose');
 const csurf      = require('csurf');
 
-// Routes
-const indexRoutes    = require('./routes/index');
-const authRoutes     = require('./routes/auth');
-const userRoutes     = require('./routes/user');
-const txRoutes       = require('./routes/transactions');
-const budgetRoutes   = require('./routes/budget');
+// Route imports
+const indexRoutes       = require('./routes/index');
+const authRoutes        = require('./routes/auth');
+const userRoutes        = require('./routes/user');
+const transactionRoutes = require('./routes/transaction');  // singular filename
+const budgetRoutes      = require('./routes/budget');
 
-// Middleware
+// Middleware imports
 const { setLocals }  = require('./middlewares/locals');
 const handleErrors   = require('./middlewares/error-handler');
 
@@ -22,7 +24,7 @@ const app = express();
 // Connect to MongoDB
 async function connectDB(uri) {
   if (!uri) {
-    console.warn('No MongoDB URI—skipping DB connect');
+    console.warn('No MONGODB_URI—skipping DB connect');
     return;
   }
   try {
@@ -49,7 +51,7 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Session
+// Session configuration
 if (!process.env.SESSION_SECRET) {
   console.error('❌ SESSION_SECRET is required');
   process.exit(1);
@@ -63,27 +65,27 @@ const sessionConfig = {
     : undefined,
   cookie: {
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24,
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production'
   }
 };
 app.use(session(sessionConfig));
 
-// CSRF
+// CSRF protection
 app.use(csurf());
 
-// Flash + locals
+// Expose session + flash + user to all views
 app.use(setLocals);
 
-// Routes
+// Mount routes
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
-app.use('/transactions', txRoutes);
+app.use('/transactions', transactionRoutes);
 app.use('/budget', budgetRoutes);
 
-// Error handler
+// Global error handler
 app.use(handleErrors);
 
 // Start server
