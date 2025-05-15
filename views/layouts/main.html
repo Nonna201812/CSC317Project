@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Planner</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
@@ -19,22 +19,22 @@
         <form id="transaction-form">
             <div class="form-group">
                 <label for="amount">Amount ($)</label>
-                <input type="number" id="amount" name="amount" placeholder="e.g. 200" required>
+                <input type="number" id="amount" placeholder="e.g. 200" required>
             </div>
 
             <div class="form-group">
                 <label for="date">Date</label>
-                <input type="date" id="date" name="date" required>
+                <input type="date" id="date" required>
             </div>
 
             <div class="form-group">
                 <label for="category">Category</label>
-                <input type="text" id="category" name="category" placeholder="e.g. Groceries" required>
+                <input type="text" id="category" placeholder="e.g. Groceries" required>
             </div>
 
             <div class="form-group">
                 <label for="type">Type</label>
-                <select id="type" name="type" required>
+                <select id="type" required>
                     <option value="" disabled selected>Select type</option>
                     <option value="income">Income</option>
                     <option value="expense">Expense</option>
@@ -42,22 +42,6 @@
             </div>
 
             <button type="submit">Add Transaction</button>
-        </form>
-    </section>
-
-    <!--Budget Limit Section-->
-    <section aria-labelledby="set-budget-limit">
-        <h2 id="set-budget-limit">Set Budget Limit</h2>
-        <form id="limit-form">
-            <div class="form-group">
-                <label for="limit-category">Category</label>
-                <input type="text" id="limit-category" name="limit-category" placeholder="e.g. Groceries" required>
-            </div>
-            <div class="form-group">
-                <label for="limit-amount">Limit ($)</label>
-                <input type="number" id="limit-amount" name="limit-amount" placeholder="e.g. 500" min="1" required>
-            </div>
-            <button type="submit">Set Limit</button>
         </form>
     </section>
 
@@ -96,6 +80,6 @@
     <p>&copy; 2025 Budget Planner App. All rights reserved.</p>
 </footer>
 
-<script src="/js/script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
