@@ -14,5 +14,4 @@ router.get('/budget', isAuthenticated, (req, res) => {
         isAuthenticated: !!req.session.user
     });
 });
-router.post('/budget', isAuthenticated, setLimit); //remove this line if it causes issues
 module.exports = router;
