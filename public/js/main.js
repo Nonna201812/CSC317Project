@@ -1,126 +1,121 @@
-// public/js/main.js
 document.addEventListener('DOMContentLoaded', () => {
-  const txForm          = document.getElementById('transaction-form');
-  const limitForm       = document.getElementById('limit-form');
-  const txList          = document.getElementById('transaction-list');
-  const incomeTotalEl   = document.getElementById('income-total');
-  const expenseTotalEl  = document.getElementById('expense-total');
-  const balanceEl       = document.getElementById('balance');
-  const filterType      = document.getElementById('filter-type');
-  const filterCategory  = document.getElementById('filter-category');
+    const form = document.getElementById('transaction-form');
+    const list = document.getElementById('transaction-list');
+    const incomeTotal = document.getElementById('income-total');
+    const expenseTotal = document.getElementById('expense-total');
+    const balance = document.getElementById('balance');
 
-  let allTransactions = [];
+    // Optional filters (if using)
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
 
-  async function fetchTransactions() {
-    const res = await fetch('/transactions');
-    if (!res.ok) throw new Error('Failed to fetch transactions');
-    allTransactions = await res.json();
-    return allTransactions;
-  }
+    // Fetch initial transactions
+    let transactions = [];
+    fetch('/transactions')
+        .then(response => response.json())
+        .then(data => {
+            transactions = data;
+            updateUI();
+        })
+        .catch(err => console.error('Failed to fetch transactions:', err));
 
-  function renderTransactions(transactions) {
-    txList.innerHTML = '';
-    transactions.forEach(tx => {
-      const item = document.createElement('div');
-      item.className = 'transaction-item';
-      item.innerHTML = `
-        <span>${new Date(tx.date).toLocaleDateString()}</span>
-        <span>${tx.category}</span>
-        <span>${tx.type}</span>
-        <span>$${tx.amount.toFixed(2)}</span>`;
-      txList.appendChild(item);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const description = document.getElementById('description').value.trim();
+        const amount = parseFloat(document.getElementById('amount').value);
+        const date = document.getElementById('date').value;
+        const category = document.getElementById('category').value.trim();
+        const type = document.getElementById('type').value;
+
+        if (!description || !amount || !date || !category || isNaN(amount)) {
+            alert('Please fill in all fields correctly.');
+            return;
+        }
+
+        const transaction = {
+            description,
+            amount,
+            date,
+            category,
+            type
+        };
+
+        // Send to server
+        fetch('/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(transaction)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    console.error(data);
+                    return;
+                }
+
+                transactions.push(data);
+                form.reset();
+                updateUI();
+            })
+            .catch(err => {
+                alert('Failed to add transaction. Please try again.');
+                console.error(err);
+            });
     });
-  }
 
-  function updateSummary(transactions) {
-    const income = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-    incomeTotalEl.textContent  = income.toFixed(2);
-    expenseTotalEl.textContent = expense.toFixed(2);
-    balanceEl.textContent      = (income - expense).toFixed(2);
-  }
-
-  async function loadAndDisplay() {
-    try {
-      const txs = await fetchTransactions();
-      renderTransactions(txs);
-      updateSummary(txs);
-    } catch (err) {
-      console.error(err);
+    // Filter listeners
+    if (filterType && filterCategory) {
+        filterType.addEventListener('change', updateUI);
+        filterCategory.addEventListener('input', updateUI);
     }
-  }
 
-  txForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const data = {
-      description: txForm.description.value,
-      amount:      parseFloat(txForm.amount.value),
-      date:        txForm.date.value,
-      category:    txForm.category.value,
-      type:        txForm.type.value
-    };
-    try {
-      const res = await fetch('/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        const { errors, message } = await res.json();
-        console.error(errors || message);
-        return;
-      }
-      txForm.reset();
-      await loadAndDisplay();
-    } catch (err) {
-      console.error(err);
+    function updateUI() {
+        list.innerHTML = '';
+        let income = 0;
+        let expense = 0;
+
+        const typeFilter = filterType?.value || 'all';
+        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
+
+        const filtered = transactions.filter(t => {
+            const typeMatch = typeFilter === 'all' || t.type === typeFilter;
+            const categoryMatch = t.category.toLowerCase().includes(categoryFilter);
+            return typeMatch && categoryMatch;
+        });
+
+        filtered.forEach(t => {
+            const item = document.createElement('div');
+            item.className = `transaction-item ${t.type}`;
+
+            const details = document.createElement('div');
+            details.className = 'transaction-details';
+            details.innerHTML = `
+                <span class="category">${t.category}</span>
+                <span class="description">${t.description}</span>
+                <span class="date">${new Date(t.date).toLocaleDateString()}</span>
+            `;
+
+            const meta = document.createElement('div');
+            meta.className = 'transaction-meta';
+            meta.innerHTML = `
+                <span class="amount">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
+            `;
+
+            item.appendChild(details);
+            item.appendChild(meta);
+            list.appendChild(item);
+
+            if (t.type === 'income') income += t.amount;
+            else expense += t.amount;
+        });
+
+        incomeTotal.textContent = income.toFixed(2);
+        expenseTotal.textContent = expense.toFixed(2);
+        balance.textContent = (income - expense).toFixed(2);
     }
-  });
-
-  limitForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const data = {
-      category: limitForm.category.value,
-      limit:    parseFloat(limitForm.limit.value)
-    };
-    try {
-      const res = await fetch('/transactions/limit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        const { errors, message } = await res.json();
-        console.error(errors || message);
-        return;
-      }
-      limitForm.reset();
-      alert('Budget limit set successfully');
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  function applyFilters() {
-    let filtered = [...allTransactions];
-    const typeVal = filterType.value;
-    const catVal  = filterCategory.value.trim().toLowerCase();
-    if (typeVal !== 'all') {
-      filtered = filtered.filter(t => t.type === typeVal);
-    }
-    if (catVal) {
-      filtered = filtered.filter(t => t.category.toLowerCase().includes(catVal));
-    }
-    renderTransactions(filtered);
-    updateSummary(filtered);
-  }
-
-  filterType.addEventListener('change', applyFilters);
-  filterCategory.addEventListener('input', applyFilters);
-
-  loadAndDisplay();
 });
+
