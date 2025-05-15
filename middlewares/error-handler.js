@@ -26,3 +26,5 @@ module.exports = (err, req, res,next) => {
         year: 'numeric', month: 'long', day: 'numeric'
       }) : ''
     }
+  });
+};
