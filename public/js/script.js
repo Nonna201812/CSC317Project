@@ -1,5 +1,6 @@
 // public/script.js
 
+console.log("✅ script.js is loaded and running");
 const API_BASE = '/transactions';
 
 document.addEventListener('DOMContentLoaded', () => {
