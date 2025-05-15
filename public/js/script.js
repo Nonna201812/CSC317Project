@@ -1,6 +1,6 @@
 // public/script.js
 
-const API_BASE = '/api/transactions';
+const API_BASE = '/transactions';
 
 document.addEventListener('DOMContentLoaded', () => {
     // form elements
