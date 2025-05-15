@@ -33,13 +33,6 @@ router.post(
     createTransaction
 );
 
-// GET current budget limit for a category
-// e.g. GET /api/transactions/limit?category=Food
-router.get(
-    '/limit',
-    isAuthenticated,
-    getLimit
-);
 
 // POST to set budget limit
 router.post(
@@ -51,6 +44,13 @@ router.post(
     ],
     validate,
     setLimit
+);
+
+// GET current budget limit for a category
+router.get(
+    '/limit',
+    isAuthenticated,
+    getLimit
 );
 
 // GET all transactions

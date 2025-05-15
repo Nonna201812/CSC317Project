@@ -1,87 +1,57 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('transaction-form');
-    const list = document.getElementById('transaction-list');
-    const incomeTotal = document.getElementById('income-total');
-    const expenseTotal = document.getElementById('expense-total');
-    const balance = document.getElementById('balance');
+    // === Budget‑Limit AJAX Only ===
+    const limitForm = document.getElementById('limit-form');
+    if (!limitForm) return;  // Skip if no budget form on page
 
-    const filterType = document.getElementById('filter-type');
-    const filterCategory = document.getElementById('filter-category');
+    const limitCategoryInput  = document.getElementById('limit-category');
+    const limitAmountInput    = document.getElementById('limit-amount');
+    const currentCategorySpan = document.getElementById('current-category');
+    const currentLimitSpan    = document.getElementById('current-limit');
 
-    let transactions = [];
+    const getActiveCategory = () => limitCategoryInput.value.trim();
 
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const amount = parseFloat(document.getElementById('amount').value);
-        const date = document.getElementById('date').value;
-        const category = document.getElementById('category').value.trim();
-        const type = document.getElementById('type').value;
-
-        if (!amount || !date || !category || isNaN(amount)) {
-            alert('Please fill in all fields correctly.');
-            return;
+    async function loadLimit() {
+        const category = getActiveCategory();
+        if (!category) return;
+        currentCategorySpan.textContent = category;
+        try {
+            const res = await fetch(
+                `/transactions/limit?category=${encodeURIComponent(category)}`
+            );
+            if (!res.ok) throw new Error(`Status ${res.status}`);
+            const { limit } = await res.json();
+            limitAmountInput.value       = limit.toFixed(2);
+            currentLimitSpan.textContent = limit.toFixed(2);
+        } catch (err) {
+            console.warn('Could not load budget limit', err);
         }
+    }
 
-        const transaction = {
-            id: Date.now(),
-            amount,
-            date,
-            category,
-            type
-        };
-
-        transactions.push(transaction);
-        form.reset();
-        updateUI();
+    limitForm.addEventListener('submit', async e => {
+        e.preventDefault();  // Prevent full-page reload
+        const category = getActiveCategory();
+        const value    = parseFloat(limitAmountInput.value);
+        if (!category || isNaN(value) || value <= 0) {
+            return alert('Enter a valid category and positive limit.');
+        }
+        try {
+            const res = await fetch('/transactions/set-limit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, limit: value })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                return alert(data.error || 'Failed to save limit');
+            }
+            currentLimitSpan.textContent = data.limit.toFixed(2);
+            alert('Budget limit saved!');
+        } catch (err) {
+            console.error('Error setting limit', err);
+            alert('Network error setting limit');
+        }
     });
 
-    if (filterType && filterCategory) {
-        filterType.addEventListener('change', updateUI);
-        filterCategory.addEventListener('input', updateUI);
-    }
-
-    function updateUI() {
-        list.innerHTML = '';
-        let income = 0;
-        let expense = 0;
-
-        const typeFilter = filterType?.value || 'all';
-        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
-
-        const filtered = transactions.filter(t => {
-            const typeMatch = typeFilter === 'all' || t.type === typeFilter;
-            const categoryMatch = t.category.toLowerCase().includes(categoryFilter);
-            return typeMatch && categoryMatch;
-        });
-
-        filtered.forEach(t => {
-            const item = document.createElement('div');
-            item.className = `transaction-item ${t.type}`;
-
-            const details = document.createElement('div');
-            details.className = 'transaction-details';
-            details.innerHTML = `
-        <span class="category">${t.category}</span>
-        <span class="date">${new Date(t.date).toLocaleDateString()}</span>
-      `;
-
-            const meta = document.createElement('div');
-            meta.className = 'transaction-meta';
-            meta.innerHTML = `
-        <span class="amount">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
-      `;
-
-            item.appendChild(details);
-            item.appendChild(meta);
-            list.appendChild(item);
-
-            if (t.type === 'income') income += t.amount;
-            else expense += t.amount;
-        });
-
-        incomeTotal.textContent = income.toFixed(2);
-        expenseTotal.textContent = expense.toFixed(2);
-        balance.textContent = (income - expense).toFixed(2);
-    }
+    limitCategoryInput.addEventListener('change', loadLimit);
+    loadLimit();
 });

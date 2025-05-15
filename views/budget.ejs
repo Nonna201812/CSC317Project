@@ -49,6 +49,13 @@
                 <input type="number" id="limit-amount" name="limit-amount" placeholder="e.g. 500" min="1" required>
             </div>
             <button type="submit">Set Limit</button>
+
+            <!-- show the saved limit -->
+            <p>
+                Current limit: $
+                <span id="current-limit">0.00</span>
+            </p>
+
         </form>
     </section>
 
@@ -83,4 +90,7 @@
     </section>
 </main>
 
+<script src="/js/main.js" defer></script>
 <script src="/js/script.js" defer></script>
+
+
