@@ -75,6 +75,7 @@ exports.getLogin = (req, res) => {
     title: 'Login',
     errors: [],
     flashMessage,
+    formData: {}, /**Added this line; remove if it doesn't work **/
     csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
 
