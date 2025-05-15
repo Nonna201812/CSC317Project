@@ -4,6 +4,7 @@ const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
+const csurf = require('csurf'); 
 
 // Import routes
 const indexRoutes = require('./routes/index');
