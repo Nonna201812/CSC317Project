@@ -89,7 +89,7 @@ const checkBudgetLimit = async (userId, category, amount) => {
 };
 
 // POST /auth/login
-exports.postLogin = async (req, res, next) => {
+const postLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -239,6 +239,7 @@ const setLimit = [
     }
 ];
 
+// Export all handlers
 module.exports = {
     postLogin,
     createTransaction,
@@ -248,5 +249,3 @@ module.exports = {
     deleteTransaction,
     setLimit
 };
-
-module.exports = exports;
