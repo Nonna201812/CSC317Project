@@ -82,14 +82,11 @@ const sessionConfig = {
 
 if (process.env.MONGODB_URI) {
   sessionConfig.store = MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 14 * 24 * 60 * 60,
-    autoRemove: 'native',
-    touchAfter: 60,
-    collectionName: 'sessions',
-    stringify: false, // This is important to avoid double JSON serialization
-    serialize: (session) => JSON.stringify(session),
-    unserialize: (data) => JSON.parse(data)
+  mongoUrl: process.env.MONGODB_URI,
+  ttl: 14 * 24 * 60 * 60,
+  autoRemove: 'native',
+  touchAfter: 60,
+  collectionName: 'sessions'
   });
 }
 
