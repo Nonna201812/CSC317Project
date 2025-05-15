@@ -1,16 +1,30 @@
-module.exports = (err, req, res, next) => {
+module.exports = (err, req, res,next) => {
   console.error(err.stack);
-  const status = err.statusCode || 500;
-  const msg    = err.message || 'Something went wrong';
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Something went wrong';
 
-  if (req.xhr || req.headers.accept?.includes('json')) {
-    return res.status(status).json({ success: false, message: msg });
+  // JSON for API/AJAX
+  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
   }
 
-  res.status(status).render('error', {
+  // EJS render for normal pages
+  return res.status(statusCode).render('error', {
     title: 'Error',
-    message: msg,
+    message,
     error: process.env.NODE_ENV === 'development' ? err : {},
-    path: req.path
+    path: req.path || '/',
+    isAuthenticated: !!req.session?.user,
+    helpers: {
+      isActiveRoute: (path, route) => path === route,
+      currentYear: () => new Date().getFullYear(),
+      formatDate: date => date ? new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      }) : ''
+    }
   });
 };
