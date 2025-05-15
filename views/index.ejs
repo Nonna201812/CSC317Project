@@ -4,7 +4,7 @@
   <div class="welcome-section">
     <h1><%= message %></h1>
     <p>A simple authentication system for web applications</p>
-    
+
     <% if (isAuthenticated) { %>
       <div class="action-buttons">
         <a href="/user/profile" class="btn primary-btn">View Profile</a>
@@ -17,7 +17,7 @@
     <% } %>
   </div>
 
-<%- include('budget') %>
+  <%- include('budget') %>
 
 </div>
 
