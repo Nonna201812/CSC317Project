@@ -68,16 +68,19 @@ exports.postRegister = async (req, res, next) => {
 exports.getLogin = (req, res) => {
   // Get flash message from session if it exists
   const flashMessage = req.session.flashMessage;
-  // Clear flash message from session
   delete req.session.flashMessage;
+
+  // Check if there's form data from a previous attempt
+  const formData = req.session.formData || {};
+  delete req.session.formData;           // Clear after use
 
   res.render('auth/login', {
     title: 'Login',
     errors: [],
+    formData,  // Include form data
     flashMessage,
     csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
-
 };
 
 /**
