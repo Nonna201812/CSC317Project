@@ -12,9 +12,10 @@ exports.getRegister = (req, res) => {
   res.render('auth/register', {
     title: 'Register',
     errors: [],
-    formData: {},
-    csrfToken: req.csrfToken()
+    formData: req.body || {},
+    csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
+
 };
 
 /**
@@ -69,13 +70,14 @@ exports.getLogin = (req, res) => {
   const flashMessage = req.session.flashMessage;
   // Clear flash message from session
   delete req.session.flashMessage;
-  
+
   res.render('auth/login', {
     title: 'Login',
     errors: [],
     flashMessage,
-    csrfToken: req.csrfToken()
+    csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
+
 };
 
 /**
@@ -123,10 +125,10 @@ exports.postLogin = async (req, res, next) => {
       return res.status(401).render('auth/login', {
         title: 'Login',
         errors: [{ msg: 'Invalid email or password' }],
-        formData: {
-          email: req.body.email
-        }
+        formData: req.body,
+        csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
       });
+
     }
     
     // Set user session (don't include password in the session)

@@ -47,16 +47,35 @@ app.use(express.static(path.join(__dirname, 'public')));
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Serve main.html for the main app page
+app.get('/main', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'layouts', 'main.html'));
+});
+
+// Global template helpers
+app.locals.helpers = {
+  isActiveRoute: (path, route) => path === route,
+  currentYear: () => new Date().getFullYear(),
+  formatDate: date => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+};
 
 // Session configuration (more secure)
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-  resave: false,
-  saveUninitialized: false,
+  resave: true,
+  saveUninitialized: true,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax'
   }
 };
@@ -73,6 +92,13 @@ if (process.env.MONGODB_URI) {
     unserialize: (data) => JSON.parse(data)
   });
 }
+
+// CSRF protection disabled (temporarily)
+console.log('CSRF protection is currently disabled');
+app.use((req, res, next) => {
+  res.locals.csrfToken = 'csrf-protection-disabled';
+  next();
+});
 
 
 app.use(session(sessionConfig));
