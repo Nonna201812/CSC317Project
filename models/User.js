@@ -2,82 +2,45 @@
  * User model
  * Defines the schema for users in our application
  */
+
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt   = require('bcrypt');
 
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: [true, 'Username is required'],
-    // Removed index to avoid creation issues
+    required: true,
+    unique: true,
     trim: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [20, 'Username cannot exceed 20 characters']
+    minlength: 3,
+    maxlength: 20
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
-    trim: true,
-    lowercase: true,
+    required: true,
     unique: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
+    lowercase: true,
+    match: [/\S+@\S+\.\S+/, 'Invalid email']
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters'],
+    required: true,
+    minlength: 8,
     validate: {
-      validator: function (value) {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
-      },
-      message: 'Password must be at least 8 characters and include at least one uppercase letter, one lowercase letter, one number, and one special character'
+      validator: v => /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(v),
+      message: 'Password must include uppercase, lowercase, and a number'
     }
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }, 
-  // Budget fields:
-  budgetLimit: {
-    type: Number,
-    default: 0
-  },
-  budgetAlertSent: {
-    type: Boolean,
-    default: false
   }
-}, {
-  // Add virtual properties when converting to JSON
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
+}, { timestamps: true });
 
-/**
- * Password hashing middleware
- * Automatically hashes the password before saving to the database
- */
 UserSchema.pre('save', async function(next) {
-  // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) return next();
-  
-  try {
-    // Generate a salt
-    const salt = await bcrypt.genSalt(10);
-    
-    // Hash the password with the salt
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-/**
- * Method to compare passwords
- * Used during login to verify the provided password
- */
-UserSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+UserSchema.methods.comparePassword = function(candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
 module.exports = mongoose.model('User', UserSchema);
