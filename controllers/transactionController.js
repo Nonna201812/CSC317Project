@@ -2,12 +2,15 @@ const Transaction = require('../models/Transaction');
 const BudgetLimit = require('../models/BudgetLimit');
 const User = require('../models/User');
 const sendBudgetAlert = require('../utils/mailer');
+const mongoose = require('mongoose');
+
 
 // Helper function for user session check
 const checkAuth = (req, res, next) => {
     if (!req.session?.user?.id) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
+    req.userId = req.session.user.id;
     next();
 };
 
@@ -16,32 +19,90 @@ const validateCategory = (category) => {
     return category?.trim() || null;
 };
 
+// Helper function for input validation
+const validateTransactionInput = ({ description, amount, date, category, type }) => {
+    if (!description || description.trim().length === 0 || description.length > 500) {
+        throw new Error('Description is required and cannot exceed 500 characters');
+    }
+    if (!['income', 'expense'].includes(type)) {
+        throw new Error('Invalid type. Must be either "income" or "expense"');
+    }
+    const validatedCategory = validateCategory(category);
+    if (!validatedCategory) {
+        throw new Error('Invalid category');
+    }
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
+        throw new Error('Invalid date. Cannot be in the future');
+    }
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        throw new Error('Amount must be a positive number');
+    }
+    return {
+        description: description.trim(),
+        amount: parsedAmount,
+        date: parsedDate,
+        category: validatedCategory,
+        type: type.trim()
+    };
+};
+
 // In-memory cache for budget limits (to reduce DB calls)
 const budgetLimitCache = new Map();
+
+// Helper function for budget limit checking
+const checkBudgetLimit = async (userId, category, amount) => {
+    const cacheKey = `${userId}:${category}`;
+    let budgetLimit = budgetLimitCache.get(cacheKey);
+
+    if (!budgetLimit) {
+        const limitDoc = await BudgetLimit.findOne({ user: userId, category });
+        if (limitDoc) {
+            budgetLimit = limitDoc.limit;
+            budgetLimitCache.set(cacheKey, budgetLimit);
+            console.log(`✅ Budget limit cached: ${category} -> ${budgetLimit}`);
+        }
+    }
+
+    if (!budgetLimit) return;
+
+    const totalSpentAgg = await Transaction.aggregate([
+        { $match: { user: userId, category } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    const currentSpent = totalSpentAgg[0]?.total || 0;
+    const newTotal = currentSpent + amount;
+
+    if (newTotal > budgetLimit) {
+        const user = await User.findById(userId).select('email username');
+        if (user?.email) {
+            try {
+                await sendBudgetAlert(user.email, user.username);
+                console.log(`✅ Budget alert sent to: ${user.email}`);
+            } catch (emailError) {
+                console.error(`❌ Failed to send budget alert: ${emailError.message}`);
+            }
+        }
+    }
+};
 
 // POST /auth/login
 exports.postLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-
-        // Validate input
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required' });
         }
-
-        // Find the user
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        // Verify password (assuming you have a password hashing mechanism)
-        const isMatch = password === user.password;  // Replace with bcrypt.compare if using bcrypt
+        const isMatch = password === user.password; // Replace with bcrypt.compare if using hashing
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        // Set the session
         req.session.user = { id: user._id, email: user.email };
         res.status(200).json({ message: 'Login successful', user: req.session.user });
     } catch (err) {
@@ -55,68 +116,15 @@ const createTransaction = [
     checkAuth,
     async (req, res, next) => {
         try {
-            const { description, amount, date, category, type } = req.body;
-
-            // Validate inputs
-            if (!description?.trim() || description.length > 500) {
-                return res.status(400).json({ error: 'Description is required and cannot exceed 500 characters' });
-            }
-            if (!['income', 'expense'].includes(type)) {
-                return res.status(400).json({ error: 'Invalid type. Must be either "income" or "expense"' });
-            }
-            const validatedCategory = validateCategory(category);
-            if (!validatedCategory) {
-                return res.status(400).json({ error: 'Invalid category' });
-            }
-            const parsedDate = new Date(date);
-            if (isNaN(parsedDate.getTime()) || parsedDate > new Date()) {
-                return res.status(400).json({ error: 'Invalid date. Cannot be in the future' });
-            }
-            const parsedAmount = parseFloat(amount);
-            if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                return res.status(400).json({ error: 'Amount must be a positive number' });
-            }
-
-            // Create and save the transaction
+            const validatedData = validateTransactionInput(req.body);
             const transaction = new Transaction({
-                description: description.trim(),
-                amount: parsedAmount,
-                date: parsedDate,
-                category: validatedCategory,
-                type: type.trim(),
+                ...validatedData,
                 user: req.userId
             });
             const saved = await transaction.save();
 
-            // Check for budget limit breach
-            const cacheKey = `${req.userId}:${validatedCategory}`;
-            let budgetLimit = budgetLimitCache.get(cacheKey);
-            if (!budgetLimit) {
-                const limitDoc = await BudgetLimit.findOne({
-                    user: req.userId,
-                    category: validatedCategory
-                });
-                if (limitDoc) {
-                    budgetLimit = limitDoc.limit;
-                    budgetLimitCache.set(cacheKey, budgetLimit);
-                }
-            }
-
-            // Check if the budget limit is breached
-            if (budgetLimit) {
-                const totalSpent = await Transaction.aggregate([
-                    { $match: { user: transaction.user, category: validatedCategory } },
-                    { $group: { _id: null, total: { $sum: '$amount' } } }
-                ]);
-
-                if (totalSpent.length > 0 && totalSpent[0].total >= budgetLimit) {
-                    const user = await User.findById(req.userId).select('email username');
-                    if (user?.email) {
-                        await sendBudgetAlert(user.email, user.username);
-                        console.log('✅ Budget alert sent to:', user.email);
-                    }
-                }
-            }
+            // Check budget limit breach asynchronously
+            await checkBudgetLimit(req.userId, validatedData.category, validatedData.amount);
 
             res.status(201).json(saved);
         } catch (err) {
@@ -126,13 +134,12 @@ const createTransaction = [
     }
 ];
 
-
 // GET all transactions
 const getTransactions = [
     checkAuth,
     async (req, res, next) => {
         try {
-            const transactions = await Transaction.find({ user: req.session.user.id }).sort('-date');
+            const transactions = await Transaction.find({ user: req.userId }).sort('-date');
             res.json(transactions);
         } catch (err) {
             next(new Error('Failed to fetch transactions: ' + err.message));
@@ -145,10 +152,7 @@ const getTransactionById = [
     checkAuth,
     async (req, res, next) => {
         try {
-            const tx = await Transaction.findOne({
-                _id: req.params.id,
-                user: req.session.user.id
-            });
+            const tx = await Transaction.findOne({ _id: req.params.id, user: req.userId });
             if (!tx) {
                 return res.status(404).json({ error: 'Transaction not found' });
             }
@@ -164,21 +168,19 @@ const updateTransaction = [
     checkAuth,
     async (req, res, next) => {
         try {
-            const { description, amount, date, category, type } = req.body;
             const updates = {};
-
-            if (description) updates.description = description.trim();
-            if (amount) updates.amount = parseFloat(amount);
-            if (date) updates.date = new Date(date);
-            if (category) updates.category = validateCategory(category);
-            if (type) updates.type = type.trim();
+            if (req.body.description) updates.description = req.body.description.trim();
+            if (req.body.amount) updates.amount = parseFloat(req.body.amount);
+            if (req.body.date) updates.date = new Date(req.body.date);
+            if (req.body.category) updates.category = validateCategory(req.body.category);
+            if (req.body.type) updates.type = req.body.type.trim();
 
             if (Object.keys(updates).length === 0) {
                 return res.status(400).json({ error: 'No valid updates provided' });
             }
 
             const updated = await Transaction.findOneAndUpdate(
-                { _id: req.params.id, user: req.session.user.id },
+                { _id: req.params.id, user: req.userId },
                 updates,
                 { new: true, runValidators: true, context: 'query' }
             );
@@ -199,10 +201,7 @@ const deleteTransaction = [
     checkAuth,
     async (req, res, next) => {
         try {
-            const deleted = await Transaction.findOneAndDelete({
-                _id: req.params.id,
-                user: req.session.user.id
-            });
+            const deleted = await Transaction.findOneAndDelete({ _id: req.params.id, user: req.userId });
             if (!deleted) {
                 return res.status(404).json({ error: 'Transaction not found' });
             }
@@ -228,11 +227,11 @@ const setLimit = [
                 return res.status(400).json({ error: 'Limit must be a positive number' });
             }
             const saved = await BudgetLimit.findOneAndUpdate(
-                { user: req.session.user.id, category: validatedCategory },
+                { user: req.userId, category: validatedCategory },
                 { limit: parsedLimit },
                 { new: true, upsert: true, runValidators: true, context: 'query' }
             );
-            budgetLimitCache.set(`${req.session.user.id}:${validatedCategory}`, parsedLimit);
+            budgetLimitCache.set(`${req.userId}:${validatedCategory}`, parsedLimit);
             res.status(201).json(saved);
         } catch (err) {
             next(new Error('Failed to set budget limit: ' + err.message));
@@ -241,6 +240,7 @@ const setLimit = [
 ];
 
 module.exports = {
+    postLogin,
     createTransaction,
     getTransactions,
     getTransactionById,
