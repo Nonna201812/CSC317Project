@@ -67,9 +67,13 @@ if (process.env.MONGODB_URI) {
     ttl: 14 * 24 * 60 * 60,
     autoRemove: 'native',
     touchAfter: 60,
-    collectionName: 'sessions'
+    collectionName: 'sessions',
+    stringify: false, // This is important to avoid double JSON serialization
+    serialize: (session) => JSON.stringify(session),
+    unserialize: (data) => JSON.parse(data)
   });
 }
+
 
 app.use(session(sessionConfig));
 
