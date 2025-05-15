@@ -1,131 +1,87 @@
-// public/script.js
-
-const API_BASE = '/api/transactions';
-
 document.addEventListener('DOMContentLoaded', () => {
-    // form elements
-    const txForm = document.getElementById('transaction-form');
-    const limitForm = document.getElementById('limit-form');
-    const listEl = document.getElementById('transaction-list');
-    const incomeEl = document.getElementById('income-total');
-    const expenseEl = document.getElementById('expense-total');
-    const balanceEl = document.getElementById('balance');
+    const form = document.getElementById('transaction-form');
+    const list = document.getElementById('transaction-list');
+    const incomeTotal = document.getElementById('income-total');
+    const expenseTotal = document.getElementById('expense-total');
+    const balance = document.getElementById('balance');
 
-    // load & render on start
-    loadTransactions();
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
 
-    // Add Transaction
-    txForm.addEventListener('submit', async (e) => {
+    let transactions = [];
+
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const payload = {
-            description: txForm.description?.value.trim(),
-            amount: parseFloat(txForm.amount.value),
-            date: txForm.date.value,
-            category: txForm.category.value.trim(),
-            type: txForm.type.value   // Correctly include the type
+
+        const amount = parseFloat(document.getElementById('amount').value);
+        const date = document.getElementById('date').value;
+        const category = document.getElementById('category').value.trim();
+        const type = document.getElementById('type').value;
+
+        if (!amount || !date || !category || isNaN(amount)) {
+            alert('Please fill in all fields correctly.');
+            return;
+        }
+
+        const transaction = {
+            id: Date.now(),
+            amount,
+            date,
+            category,
+            type
         };
 
-        try {
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const err = await res.json();
-                alert(`Error: ${err.error}`);
-                return;
-            }
-
-            txForm.reset();
-            loadTransactions();
-        } catch (err) {
-            console.error('Failed to add transaction:', err);
-        }
+        transactions.push(transaction);
+        form.reset();
+        updateUI();
     });
 
-    // Set Budget Limit
-    limitForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-            category: limitForm['limit-category'].value.trim(),
-            limit: parseFloat(limitForm['limit-amount'].value)
-        };
-
-        try {
-            const res = await fetch(API_BASE + '/set-limit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const err = await res.json();
-                alert(`Error: ${err.error}`);
-                return;
-            }
-
-            limitForm.reset();
-            alert('Budget limit set!');
-        } catch (err) {
-            console.error('Failed to set budget limit:', err);
-        }
-    });
-
-    // Load, filter, and render
-    async function loadTransactions() {
-        try {
-            const res = await fetch(API_BASE);
-            const txs = await res.json();
-
-            let income = 0, expense = 0;
-            listEl.innerHTML = '';
-            txs.forEach(tx => {
-                const div = document.createElement('div');
-                div.className = 'tx-item ' + tx.type;
-                div.innerHTML = `
-                    <span>${new Date(tx.date).toLocaleDateString()}</span>
-                    <span>${tx.category}</span>
-                    <span>$${tx.amount.toFixed(2)}</span>
-                    <span>${tx.type}</span>
-                    <button data-id="${tx._id}" class="delete">❌</button>
-                `;
-                listEl.append(div);
-
-                if (tx.type === 'income') {
-                    income += tx.amount;
-                } else {
-                    expense += tx.amount;
-                }
-            });
-
-            incomeEl.textContent = income.toFixed(2);
-            expenseEl.textContent = expense.toFixed(2);
-            balanceEl.textContent = (income - expense).toFixed(2);
-
-            attachDeleteHandlers();
-        } catch (err) {
-            console.error('Failed to load transactions:', err);
-        }
+    if (filterType && filterCategory) {
+        filterType.addEventListener('change', updateUI);
+        filterCategory.addEventListener('input', updateUI);
     }
 
-    function attachDeleteHandlers() {
-        document.querySelectorAll('.delete').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                try {
-                    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-                    if (!res.ok) {
-                        const err = await res.json();
-                        alert(`Error: ${err.error}`);
-                        return;
-                    }
-                    loadTransactions();
-                } catch (err) {
-                    console.error('Failed to delete transaction:', err);
-                }
-            });
+    function updateUI() {
+        list.innerHTML = '';
+        let income = 0;
+        let expense = 0;
+
+        const typeFilter = filterType?.value || 'all';
+        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
+
+        const filtered = transactions.filter(t => {
+            const typeMatch = typeFilter === 'all' || t.type === typeFilter;
+            const categoryMatch = t.category.toLowerCase().includes(categoryFilter);
+            return typeMatch && categoryMatch;
         });
+
+        filtered.forEach(t => {
+            const item = document.createElement('div');
+            item.className = `transaction-item ${t.type}`;
+
+            const details = document.createElement('div');
+            details.className = 'transaction-details';
+            details.innerHTML = `
+        <span class="category">${t.category}</span>
+        <span class="date">${new Date(t.date).toLocaleDateString()}</span>
+      `;
+
+            const meta = document.createElement('div');
+            meta.className = 'transaction-meta';
+            meta.innerHTML = `
+        <span class="amount">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
+      `;
+
+            item.appendChild(details);
+            item.appendChild(meta);
+            list.appendChild(item);
+
+            if (t.type === 'income') income += t.amount;
+            else expense += t.amount;
+        });
+
+        incomeTotal.textContent = income.toFixed(2);
+        expenseTotal.textContent = expense.toFixed(2);
+        balance.textContent = (income - expense).toFixed(2);
     }
 });
