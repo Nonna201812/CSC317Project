@@ -13,7 +13,6 @@ exports.getRegister = (req, res) => {
     title: 'Register',
     errors: [],
     formData: req.body || {},
-    csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
 
 };
@@ -79,8 +78,6 @@ exports.getLogin = (req, res) => {
     errors: [],
     formData,  // Include form data
     flashMessage,
-    formData: {}, /**Added this line; remove if it doesn't work **/
-    csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
   });
 };
 
@@ -130,7 +127,6 @@ exports.postLogin = async (req, res, next) => {
         title: 'Login',
         errors: [{ msg: 'Invalid email or password' }],
         formData: req.body,
-        csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
       });
 
     }

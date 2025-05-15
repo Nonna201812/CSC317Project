@@ -77,5 +77,13 @@ router.put(
     validate,
     updateTransaction
 );
+// GET a single transaction by ID
+router.get(
+    '/:id',
+    isAuthenticated,
+    [ param('id').isMongoId().withMessage('Invalid transaction ID') ],
+    validate,
+    getTransactionsById
+);
 
 module.exports = router;
