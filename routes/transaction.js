@@ -9,10 +9,12 @@ const {
     setLimit
 } = require('../controllers/transactionController');
 const validate = require('../middlewares/validate');
+const { isAuthenticated } = require('../middlewares/auth');
 
 // POST a new transaction
 router.post(
     '/',
+    isAuthenticated,
     [
         body('description').trim().notEmpty().withMessage('Description is required').isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
         body('amount').isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),
@@ -33,6 +35,7 @@ router.post(
 // POST to set budget limit
 router.post(
     '/set-limit',
+    isAuthenticated,
     [
         body('limit').isFloat({ gt: 0 }).withMessage('Limit must be a positive number'),
         body('category').trim().notEmpty().withMessage('Category is required').isLength({ max: 100 }).withMessage('Category cannot exceed 100 characters')
@@ -42,11 +45,12 @@ router.post(
 );
 
 // GET all transactions
-router.get('/', getTransactions);
+router.get('/', isAuthenticated, getTransactions);
 
 // DELETE a transaction by ID
 router.delete(
     '/:id',
+    isAuthenticated,
     [param('id').isMongoId().withMessage('Invalid transaction ID')],
     validate,
     deleteTransaction
@@ -55,6 +59,7 @@ router.delete(
 // UPDATE a transaction by ID
 router.put(
     '/:id',
+    isAuthenticated,
     [
         param('id').isMongoId().withMessage('Invalid transaction ID'),
         body('amount').optional().isFloat({ gt: 0 }).withMessage('Amount must be a positive number'),

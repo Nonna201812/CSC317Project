@@ -16,7 +16,7 @@
           type="email" 
           id="email" 
           name="email"
-          value="<%= typeof formData !== 'undefined' ? formData.email || '' : '' %>"
+          value="<%= formData?.email || '' %>"
           placeholder="Enter your email address"
           required
         >

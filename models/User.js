@@ -17,15 +17,21 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    // Removed index to avoid creation issues
     trim: true,
     lowercase: true,
+    unique: true,
     match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters']
+    minlength: [8, 'Password must be at least 8 characters'],
+    validate: {
+      validator: function (value) {
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
+      },
+      message: 'Password must be at least 8 characters and include at least one uppercase letter, one lowercase letter, one number, and one special character'
+    }
   },
   createdAt: {
     type: Date,

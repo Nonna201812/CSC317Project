@@ -11,7 +11,9 @@ const User = require('../models/User');
 exports.getRegister = (req, res) => {
   res.render('auth/register', {
     title: 'Register',
-    errors: []
+    errors: [],
+    formData: {},
+    csrfToken: req.csrfToken()
   });
 };
 
@@ -33,12 +35,17 @@ exports.postRegister = async (req, res, next) => {
       });
     }
 
-    // Create new user
+// Hash the password before saving the user
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(req.body.password, 12);
+
+// Create new user
     const user = new User({
       username: req.body.username,
       email: req.body.email,
-      password: req.body.password
+      password: hashedPassword
     });
+
 
     // Save user to database
     await user.save();
@@ -66,7 +73,8 @@ exports.getLogin = (req, res) => {
   res.render('auth/login', {
     title: 'Login',
     errors: [],
-    flashMessage
+    flashMessage,
+    csrfToken: req.csrfToken()
   });
 };
 

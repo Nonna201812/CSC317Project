@@ -18,6 +18,38 @@ const validateCategory = (category) => {
 
 // In-memory cache for budget limits (to reduce DB calls)
 const budgetLimitCache = new Map();
+
+// POST /auth/login
+exports.postLogin = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        // Find the user
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Verify password (assuming you have a password hashing mechanism)
+        const isMatch = password === user.password;  // Replace with bcrypt.compare if using bcrypt
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Set the session
+        req.session.user = { id: user._id, email: user.email };
+        res.status(200).json({ message: 'Login successful', user: req.session.user });
+    } catch (err) {
+        console.error("Login Error:", err);
+        next(err);
+    }
+};
+
 // CREATE a new transaction
 const createTransaction = [
     checkAuth,

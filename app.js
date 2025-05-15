@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -26,8 +25,6 @@ async function connectDB(uri) {
     console.warn('No MongoDB URI found—skipping DB connect');
     return;
   }
-  mongoose.set('autoIndex', false);
-  mongoose.set('autoCreate', false);
   try {
     await mongoose.connect(uri, {
       maxPoolSize: 10,
@@ -46,39 +43,20 @@ connectDB(process.env.MONGODB_URI);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Serve main.html for the main app page
-app.get('/main', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'layouts', 'main.html'));
-});
-
-// Global template helpers
-app.locals.helpers = {
-  isActiveRoute: (path, route) => path === route,
-  currentYear: () => new Date().getFullYear(),
-  formatDate: date => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-};
-
-// Session configuration
+// Session configuration (more secure)
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-  resave: true,
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24,
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
   }
 };
@@ -89,20 +67,11 @@ if (process.env.MONGODB_URI) {
     ttl: 14 * 24 * 60 * 60,
     autoRemove: 'native',
     touchAfter: 60,
-    crypto: { secret: false },
-    collectionName: 'sessions',
-    stringify: false
+    collectionName: 'sessions'
   });
 }
 
 app.use(session(sessionConfig));
-
-// CSRF protection disabled (temporarily)
-console.log('CSRF protection is currently disabled');
-app.use((req, res, next) => {
-  res.locals.csrfToken = 'csrf-protection-disabled';
-  next();
-});
 
 // Attach custom locals to all views
 app.use(setLocals);
@@ -111,7 +80,7 @@ app.use(setLocals);
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
-app.use('/api/transactions', transactionRoutes);
+app.use('/transactions', transactionRoutes);
 app.use('/', budgetRoutes);
 
 // Global error handler (must be last)
