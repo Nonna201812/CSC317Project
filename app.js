@@ -68,7 +68,7 @@ if (process.env.MONGODB_URI) {
     ttl: 14 * 24 * 60 * 60, // 14 days
     autoRemove: 'native',
     touchAfter: 60,
-    collectionName: 'sessions'
+    collectionName: 'sessions_clean'
   });
 }
 
