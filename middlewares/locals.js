@@ -4,10 +4,14 @@
  */
 
 exports.setLocals = (req, res, next) => {
-  res.locals.user            = req.session.user || null;
+  // Make user information available to templates if user is logged in
+  res.locals.user = req.session.user || null;
+  
+  // Flag to check if user is authenticated
   res.locals.isAuthenticated = !!req.session.user;
-  res.locals.path            = req.path;
-  res.locals.flashMessage    = req.session.flashMessage || null;
-  delete req.session.flashMessage;
+  
+  // Add the current path for navigation highlighting
+  res.locals.path = req.path;
+  
   next();
 };
