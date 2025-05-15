@@ -212,7 +212,6 @@ const deleteTransaction = [
     }
 ];
 
-// SET or UPDATE a budget limit
 const setLimit = [
     checkAuth,
     async (req, res, next) => {
@@ -226,15 +225,17 @@ const setLimit = [
             if (isNaN(parsedLimit) || parsedLimit <= 0) {
                 return res.status(400).json({ error: 'Limit must be a positive number' });
             }
+
             const saved = await BudgetLimit.findOneAndUpdate(
                 { user: req.userId, category: validatedCategory },
-                { limit: parsedLimit },
-                { new: true, upsert: true, runValidators: true, context: 'query' }
+                { $set: { limit: parsedLimit } },
+                { new: true, upsert: true, runValidators: true }
             );
-            budgetLimitCache.set(`${req.userId}:${validatedCategory}`, parsedLimit);
-            res.status(201).json(saved);
+
+            // respond with just the new limit
+            return res.status(200).json({ limit: saved.limit });
         } catch (err) {
-            next(new Error('Failed to set budget limit: ' + err.message));
+            next(err);
         }
     }
 ];
