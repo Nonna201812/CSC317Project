@@ -8,13 +8,13 @@ exports.isAuthenticated = (req, res, next) => {
   console.log('Session check - session exists:', !!req.session);
   console.log('Session check - user in session:', !!req.session.user);
   console.log('Current session:', req.session);
-
+  
   if (req.session && req.session.user) {
     console.log('User is authenticated, proceeding to next middleware');
     // User is authenticated, proceed to the next middleware
     return next();
   }
-
+  
   console.log('User is not authenticated, redirecting to login');
   // User is not authenticated, redirect to login page
   if (req.session) {
@@ -30,7 +30,7 @@ exports.isNotAuthenticated = (req, res, next) => {
     // User is not authenticated, proceed to the next middleware
     return next();
   }
-
+  
   // User is already authenticated, redirect to profile page
   res.redirect('/user/profile');
 };
