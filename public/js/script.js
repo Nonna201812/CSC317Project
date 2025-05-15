@@ -1,7 +1,6 @@
 // public/script.js
 
-console.log("✅ script.js is loaded and running");
-const API_BASE = '/transactions';
+const API_BASE = '/api/transactions';
 
 document.addEventListener('DOMContentLoaded', () => {
     // form elements
