@@ -4,6 +4,16 @@
  */
 const User = require('../models/User');
 
+// Helper to provide consistent locals for settings view
+const baseSettingsLocals = (req, overrides = {}) => ({
+  title: 'Settings',
+  user: req.session.user,
+  csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : '',
+  errors: [],
+  flashMessage: null,
+  ...overrides
+});
+
 /**
  * Display user profile page
  */
@@ -20,64 +30,49 @@ exports.getProfile = (req, res) => {
 exports.getSettings = async (req, res, next) => {
   try {
     const user = await User.findById(req.session.user.id);
-    res.render('user/settings', {
-      title: 'Settings',
-      user,
-      csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : ''
-    });
+    res.render('user/settings', baseSettingsLocals(req, { user }));
   } catch (error) {
     next(error);
   }
 };
-
 
 /**
  * Update user settings
  */
 exports.updateSettings = async (req, res, next) => {
   try {
-    // Get user ID from session
     const userId = req.session.user.id;
-    
-    // Find user in database
     const user = await User.findById(userId);
-    
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
       throw error;
     }
-    
-    // Update username if provided and different
-    if (req.body.username && req.body.username !== user.username) {
-      // Check if username is already taken
-      const existingUser = await User.findOne({ username: req.body.username });
-      if (existingUser && existingUser._id.toString() !== userId) {
-        return res.status(400).render('user/settings', {
-          title: 'Settings',
-          user: req.session.user,
-          errors: [{ msg: 'Username is already taken' }]
-        });
+
+    const newUsername = req.body.username?.trim();
+    if (newUsername && newUsername !== user.username) {
+      const existing = await User.findOne({ username: newUsername });
+      if (existing && existing._id.toString() !== userId) {
+        return res.status(400).render(
+            'user/settings',
+            baseSettingsLocals(req, {
+              user: req.session.user,
+              errors: [{ msg: 'Username is already taken' }]
+            })
+        );
       }
-      
-      user.username = req.body.username;
-      // Update session data
-      req.session.user.username = req.body.username;
+      user.username = newUsername;
+      req.session.user.username = newUsername;
     }
-    
-    // Save changes
+
     await user.save();
-    
-    // Render settings page with success message
-    res.render('user/settings', {
-      title: 'Settings',
-      user: req.session.user,
-      errors: [],
-      flashMessage: {
-        type: 'success',
-        text: 'Settings updated successfully'
-      }
-    });
+    res.render(
+        'user/settings',
+        baseSettingsLocals(req, {
+          user: req.session.user,
+          flashMessage: { type: 'success', text: 'Settings updated successfully' }
+        })
+    );
   } catch (error) {
     next(error);
   }
