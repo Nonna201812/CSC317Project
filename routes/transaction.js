@@ -6,7 +6,8 @@ const {
     updateTransaction,
     getTransactions,
     deleteTransaction,
-    setLimit
+    setLimit,
+    getLimit
 } = require('../controllers/transactionController');
 const validate = require('../middlewares/validate');
 const { isAuthenticated } = require('../middlewares/auth');
@@ -30,6 +31,14 @@ router.post(
     ],
     validate,
     createTransaction
+);
+
+// GET current budget limit for a category
+// e.g. GET /api/transactions/limit?category=Food
+router.get(
+    '/limit',
+    isAuthenticated,
+    getLimit
 );
 
 // POST to set budget limit

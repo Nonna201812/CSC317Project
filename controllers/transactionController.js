@@ -239,7 +239,37 @@ const setLimit = [
         }
     }
 ];
+const getLimit = [
+    checkAuth,
+    async (req, res, next) => {
+        try {
+            const { category } = req.query;
+            if (!category) {
+                return res.status(400).json({ error: 'Category is required' });
+            }
 
+            // Try cache first
+            const cacheKey = `${req.userId}:${category}`;
+            if (budgetLimitCache.has(cacheKey)) {
+                return res.status(200).json({ limit: budgetLimitCache.get(cacheKey) });
+            }
+
+            // Fallback to DB
+            const record = await BudgetLimit.findOne({
+                user: req.userId,
+                category
+            });
+
+            const limit = record ? record.limit : 0;
+            // Populate cache for next time
+            budgetLimitCache.set(cacheKey, limit);
+
+            return res.status(200).json({ limit });
+        } catch (err) {
+            next(err);
+        }
+    }
+];
 // Export all handlers
 module.exports = {
     postLogin,
@@ -248,5 +278,6 @@ module.exports = {
     getTransactionById,
     updateTransaction,
     deleteTransaction,
-    setLimit
+    setLimit,
+    getLimit,
 };
