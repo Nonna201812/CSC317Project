@@ -74,8 +74,6 @@ if (process.env.MONGODB_URI) {
 
 // Initialize session middleware
 app.use(session(sessionConfig));
-// Enable CSRF protection 
-app.use(csurf()); 
 
 // Attach custom locals to all views
 app.use(setLocals);
