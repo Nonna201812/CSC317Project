@@ -47,57 +47,32 @@ app.use(express.static(path.join(__dirname, 'public')));
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-// Serve main.html for the main app page
-app.get('/main', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'layouts', 'main.html'));
-});
 
-// Global template helpers
-app.locals.helpers = {
-  isActiveRoute: (path, route) => path === route,
-  currentYear: () => new Date().getFullYear(),
-  formatDate: date => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-};
-
-// Session configuration (more secure)
+// Session configuration (secure)
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-  resave: true,
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
   }
 };
 
+// Attach MongoDB-backed session store (if available)
 if (process.env.MONGODB_URI) {
   sessionConfig.store = MongoStore.create({
-  mongoUrl: process.env.MONGODB_URI,
-  ttl: 14 * 24 * 60 * 60,
-  autoRemove: 'native',
-  touchAfter: 60,
-  collectionName: 'sessions'
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 14 * 24 * 60 * 60, // 14 days
+    autoRemove: 'native',
+    touchAfter: 60,
+    collectionName: 'sessions'
   });
 }
 
-// CSRF protection disabled (temporarily)
-console.log('CSRF protection is currently disabled');
-app.use((req, res, next) => {
-  res.locals.csrfToken = 'csrf-protection-disabled';
-  next();
-});
-
-
+// Initialize session middleware
 app.use(session(sessionConfig));
 
 // Attach custom locals to all views
